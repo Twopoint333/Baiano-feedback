@@ -1,99 +1,213 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ChevronRight } from 'lucide-react';
+import { Gift } from 'lucide-react';
 
-const prizes = [
+const PRIZES = [
   'Coca lata',
   'Batata 100g',
   'Batata 200g',
   'Onions 100g',
   'Frango frito 140g',
 ];
-const prizeCount = prizes.length;
-const segmentAngle = 360 / prizeCount;
 
-const PrizeSegment = ({ prize, index }: { prize: string; index: number }) => {
-  const rotation = segmentAngle * index;
-  const isEven = index % 2 === 0;
+const SOFT_COLORS = [
+  '#f87b8c',
+  '#ffb366',
+  '#7ee6c8',
+  '#7ecbff',
+  '#a68cff',
+  '#ffb3c6',
+  '#ffe066',
+];
+
+const getFittedFontSize = (text: string, maxWidth: number, baseFontSize: number): number => {
+  if (typeof document === 'undefined') return baseFontSize;
+
+  const span = document.createElement('span');
+  span.style.position = 'absolute';
+  span.style.visibility = 'hidden';
+  span.style.fontFamily = "'PT Sans', sans-serif";
+  span.style.fontWeight = '700';
+  span.style.fontSize = baseFontSize + 'px';
+  span.textContent = text;
+  document.body.appendChild(span);
+  let width = span.offsetWidth;
+  let fontSize = baseFontSize;
+  while (width > maxWidth && fontSize > 8) {
+    fontSize -= 1;
+    span.style.fontSize = fontSize + 'px';
+    width = span.offsetWidth;
+  }
+  document.body.removeChild(span);
+  return fontSize;
+};
+
+const RouletteWheel = ({
+  items,
+  rotation,
+}: {
+  items: { text: string; color: string }[];
+  rotation: number;
+}) => {
+  const n = items.length;
+  if (n === 0) return null;
+
+  const width = 320,
+    height = 320,
+    cx = width / 2,
+    cy = height / 2,
+    r = 140;
 
   return (
-    <div
-      className={cn(
-        'absolute h-1/2 w-1/2 origin-bottom-right transform-gpu border-l-2',
-        isEven ? 'bg-card' : 'bg-muted/50',
-        'border-primary/50'
-      )}
+    <svg
+      className="transition-transform duration-[50ms]"
+      width="100%"
+      height="100%"
+      viewBox={`0 0 ${width} ${height}`}
       style={{ transform: `rotate(${rotation}deg)` }}
     >
-      <div
-        className="absolute -left-1/2 top-0 flex h-full w-full -translate-y-[calc(50%-1px)] transform-gpu items-center justify-center"
-        style={{ transform: `rotate(${segmentAngle / 2}deg)` }}
-      >
-        <span
-          className={cn(
-            'text-sm font-bold -translate-y-10 transform-gpu max-w-20 text-center',
-            isEven ? 'text-foreground' : 'text-primary'
-          )}
-          style={{ transform: `translateY(-5.5rem) rotate(-${segmentAngle}deg)` }}
-        >
-          {prize}
-        </span>
-      </div>
-    </div>
+      <defs>
+        <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="1" stdDeviation="2.5" floodColor="#000" floodOpacity="0.3" />
+        </filter>
+      </defs>
+      {items.map((item, i) => {
+        const startAngle = (2 * Math.PI * i) / n - Math.PI / 2;
+        const endAngle = (2 * Math.PI * (i + 1)) / n - Math.PI / 2;
+        const x1 = cx + r * Math.cos(startAngle);
+        const y1 = cy + r * Math.sin(startAngle);
+        const x2 = cx + r * Math.cos(endAngle);
+        const y2 = cy + r * Math.sin(endAngle);
+        const largeArc =
+          (endAngle - startAngle + 2 * Math.PI) % (2 * Math.PI) > Math.PI
+            ? 1
+            : 0;
+
+        const pathData = [
+          `M ${cx} ${cy}`,
+          `L ${x1} ${y1}`,
+          `A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`,
+          'Z',
+        ].join(' ');
+
+        const angle = (startAngle + endAngle) / 2;
+        const tx = cx + r * 0.65 * Math.cos(angle);
+        const ty = cy + r * 0.65 * Math.sin(angle);
+        const textAngle = (angle * 180) / Math.PI;
+
+        const arcLen = 2 * Math.PI * r * (1 / n) * 0.65 * 0.85;
+        const textVal = item.text || '';
+        const fontSize = getFittedFontSize(textVal, arcLen, 16);
+
+        return (
+          <g key={i}>
+            <path d={pathData} fill={item.color} stroke="#FFF" strokeWidth={0.8} />
+            <text
+              x={tx}
+              y={ty}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={fontSize}
+              fill="#fff"
+              fontWeight="700"
+              fontFamily="'PT Sans', sans-serif"
+              transform={`rotate(${textAngle}, ${tx}, ${ty})`}
+              style={{ filter: 'url(#shadow)' }}
+            >
+              {textVal}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
   );
 };
 
+
 export function Roulette() {
   const [isSpinning, setIsSpinning] = useState(false);
-  const [spinResult, setSpinResult] = useState<number | null>(null);
   const [rotation, setRotation] = useState(0);
+  const [spinResult, setSpinResult] = useState<string | null>(null);
+  const animationFrameId = useRef<number | null>(null);
+
+  const items = PRIZES.map((prize, index) => ({
+    text: prize,
+    color: SOFT_COLORS[index % SOFT_COLORS.length],
+  }));
+
+  const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
 
   const spin = () => {
     if (isSpinning) return;
 
-    const randomSpins = Math.floor(Math.random() * 5) + 5; // 5 a 10 voltas completas
-    const randomStopIndex = Math.floor(Math.random() * prizeCount);
-    const stopAngle = randomStopIndex * segmentAngle;
-    
-    // Pequeno deslocamento para centralizar no meio do segmento
-    const angleOffset = segmentAngle / 2;
-    // O ponteiro está no topo (apontando para baixo), então subtraímos 90 graus
-    const pointerCorrection = -90;
-
-    const totalRotation = randomSpins * 360 - stopAngle - angleOffset - pointerCorrection;
-
     setIsSpinning(true);
     setSpinResult(null);
-    setRotation(totalRotation);
 
-    setTimeout(() => {
-      setIsSpinning(false);
-      setSpinResult(randomStopIndex);
-      // Evita que o localStorage seja limpo para novas tentativas
-    }, 6000); // Duração da animação + 1s de buffer
+    const fullSpins = Math.floor(Math.random() * 2) + 6;
+    const randomOffset = Math.random() * 360;
+    const finalDeg = fullSpins * 360 + randomOffset;
+    
+    let duration = 5000;
+    let start: number | null = null;
+    const initialRotation = rotation % 360;
+    const totalChange = finalDeg - initialRotation;
+
+    const animate = (timestamp: number) => {
+      if (!start) start = timestamp;
+      const elapsed = timestamp - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = easeOutQuint(progress);
+      const angle = initialRotation + totalChange * eased;
+
+      setRotation(angle);
+
+      if (progress < 1) {
+        animationFrameId.current = requestAnimationFrame(animate);
+      } else {
+        setIsSpinning(false);
+        const finalRotation = angle % 360;
+        setRotation(finalRotation);
+
+        const degPerItem = 360 / items.length;
+        const pointerDeg = (360 - (finalRotation % 360) + 360) % 360;
+        const sectorIndex = Math.floor(pointerDeg / degPerItem) % items.length;
+
+        setSpinResult(items[sectorIndex].text);
+      }
+    };
+
+    animationFrameId.current = requestAnimationFrame(animate);
   };
   
+  useEffect(() => {
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, []);
+
   const hasSpun = spinResult !== null;
 
   return (
     <div className="w-full space-y-6 text-center">
-      <div className="relative mx-auto flex h-[300px] w-[300px] items-center justify-center overflow-hidden rounded-full border-4 border-primary shadow-lg md:h-[350px] md:w-[350px]">
+       <div className="relative mx-auto flex h-[300px] w-[300px] items-center justify-center md:h-[350px] md:w-[350px]">
+         <div 
+          className="absolute inset-0 z-0 rounded-full bg-background"
+          style={{ boxShadow: '0 12px 36px 0 rgba(0,0,0,0.16), 0 2px 8px 0 rgba(0,0,0,0.10)'}}
+         />
         <div
-          className="h-full w-full rounded-full transition-transform duration-[5000ms] ease-out"
-          style={{ transform: `rotate(${rotation}deg)` }}
+          className="h-full w-full rounded-full"
         >
-          {prizes.map((prize, index) => (
-            <PrizeSegment key={prize} prize={prize} index={index} />
-          ))}
+          <RouletteWheel items={items} rotation={rotation} />
         </div>
-        <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 transform">
-          <ChevronRight className="h-10 w-10 rotate-90 fill-destructive text-destructive-foreground stroke-[4]" />
-        </div>
-        <div className="absolute z-10 flex h-16 w-16 items-center justify-center rounded-full bg-background shadow-inner">
-            <div className="h-12 w-12 rounded-full bg-card shadow-md"></div>
+        <div className="absolute left-1/2 top-[-10px] z-10 -translate-x-1/2 transform drop-shadow-[0_4px_8px_rgba(0,0,0,0.2)]">
+          <svg width="44" height="36" viewBox="0 0 44 36">
+              <polygon points="0,0 44,0 22,36" fill="#fff"/>
+          </svg>
         </div>
       </div>
       
@@ -107,7 +221,7 @@ export function Roulette() {
          <div className="space-y-4 animate-in fade-in-50 duration-500">
            <h2 className="text-2xl font-bold font-headline">Parabéns! Você ganhou:</h2>
            <p className="text-3xl font-bold text-primary bg-accent rounded-lg p-4">
-             {prizes[spinResult!]}
+             {spinResult}
            </p>
          </div>
       )}
