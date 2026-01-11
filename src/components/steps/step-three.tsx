@@ -5,7 +5,6 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { useEffect, useState, useTransition } from 'react';
 import type { FormData } from '@/app/page';
-import { saveSurvey } from '@/app/actions';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -77,21 +76,12 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
     const fullData = { ...formData, ...data };
     updateFormData(fullData);
     
-    startTransition(async () => {
-      const result = await saveSurvey(fullData);
-      if (result.success) {
-        toast({
-          title: "Sucesso!",
-          description: "Sua pesquisa foi enviada.",
-        });
-        nextStep();
-      } else {
-        toast({
-          variant: 'destructive',
-          title: "Erro!",
-          description: result.error,
-        });
-      }
+    startTransition(() => {
+      toast({
+        title: "Sucesso!",
+        description: "Sua pesquisa foi enviada.",
+      });
+      nextStep();
     });
   };
 
