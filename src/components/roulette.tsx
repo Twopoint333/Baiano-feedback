@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 
 const PRIZES = [
-  'Coca lata',
-  'Batata 100g',
-  'Batata 200g',
-  'Onions 100g',
+  'COCA KS',
+  'BATATA 100G',
+  'BATATA 200G',
+  'ONIONS 100G',
   'FRANGO 140G',
 ];
 
