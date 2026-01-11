@@ -16,7 +16,7 @@ const BRAND_COLORS = [
   '#F3722C', // Laranja
   '#F8961E', // Laranja Amarelado
   '#F9C74F', // Amarelo
-  '#FFD700', // Amarelo Ouro
+  '#FF5722', // Vermelho-Laranja
 ];
 
 const getFittedFontSize = (text: string, maxWidth: number, baseFontSize: number): number => {
@@ -89,10 +89,14 @@ const RouletteWheel = ({
         ].join(' ');
 
         const midAngleRad = (startAngleRad + endAngleRad) / 2;
-        const textAngleDeg = (midAngleRad * 180 / Math.PI) + 90;
+        let textAngleDeg = (midAngleRad * 180 / Math.PI) + 90;
         
         const tx = cx + r * 0.65 * Math.cos(midAngleRad);
         const ty = cy + r * 0.65 * Math.sin(midAngleRad);
+
+        if (textAngleDeg > 90 && textAngleDeg < 270) {
+          textAngleDeg += 180;
+        }
         
         const arcLen = (Math.PI * r) / n * 1.3;
         const textVal = item.text || '';
