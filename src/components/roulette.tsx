@@ -13,14 +13,12 @@ const PRIZES = [
   'Frango frito 140g',
 ];
 
-const SOFT_COLORS = [
-  '#f87b8c',
-  '#ffb366',
-  '#7ee6c8',
-  '#7ecbff',
-  '#a68cff',
-  '#ffb3c6',
-  '#ffe066',
+const BRAND_COLORS = [
+  '#F94144', // Vermelho
+  '#F3722C', // Laranja
+  '#F8961E', // Laranja Amarelado
+  '#F9C74F', // Amarelo
+  '#90BE6D', // Verde (para contraste)
 ];
 
 const getFittedFontSize = (text: string, maxWidth: number, baseFontSize: number): number => {
@@ -135,7 +133,7 @@ export function Roulette() {
 
   const items = PRIZES.map((prize, index) => ({
     text: prize,
-    color: SOFT_COLORS[index % SOFT_COLORS.length],
+    color: BRAND_COLORS[index % BRAND_COLORS.length],
   }));
 
   const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
