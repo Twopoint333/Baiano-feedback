@@ -18,7 +18,7 @@ const BRAND_COLORS = [
   '#F3722C', // Laranja
   '#F8961E', // Laranja Amarelado
   '#F9C74F', // Amarelo
-  '#90BE6D', // Verde (para contraste)
+  '#FFD700', // Amarelo Ouro
 ];
 
 const getFittedFontSize = (text: string, maxWidth: number, baseFontSize: number): number => {
