@@ -70,7 +70,7 @@ const RouletteWheel = ({
       style={{
         transform: `rotate(${rotation}deg)`,
         transition: isSpinning
-          ? `transform ${spinDuration}ms cubic-bezier(0.25, 0.1, 1, 1)`
+          ? `transform ${spinDuration}ms cubic-bezier(0.25, 0.1, 0.25, 1)`
           : 'none',
       }}
     >
@@ -141,6 +141,7 @@ export function Roulette() {
   const currentRotationRef = useRef(0);
   const rouletteRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const winAudioRef = useRef<HTMLAudioElement | null>(null);
   const spinDuration = 6000;
 
   useEffect(() => {
@@ -148,6 +149,8 @@ export function Roulette() {
     audioRef.current = new Audio('/roulette-spin.mp3');
     audioRef.current.loop = true;
     audioRef.current.volume = 0.2;
+
+    winAudioRef.current = new Audio('/win-sound.mp3');
   }, []);
 
   const items = PRIZES.map((prize, index) => ({
@@ -182,6 +185,11 @@ export function Roulette() {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
+      }
+
+      if (winAudioRef.current) {
+        winAudioRef.current.currentTime = 0;
+        winAudioRef.current.play();
       }
 
       const finalAngle = currentRotationRef.current;
