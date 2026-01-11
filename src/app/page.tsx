@@ -10,7 +10,8 @@ import { Logo } from '@/components/logo';
 export type FormData = {
   nome: string;
   telefone: string;
-  comoNosConheceu: 'Instagram' | 'indicação' | 'outros' | '';
+  comoNosConheceu: 'Google' | 'Presencialmente' | 'Mais delivery' | 'Instagram' | 'Blogueira' | '';
+  blogueiraNome: string;
   avaliacaoGeral: number;
   atendimento: 'Excelente' | 'Bom' | 'Regular' | 'Ruim' | '';
   agilidade: 'Muito rápido' | 'Dentro do esperado' | 'Demorado' | '';
@@ -24,6 +25,7 @@ export default function Home() {
     nome: '',
     telefone: '',
     comoNosConheceu: '',
+    blogueiraNome: '',
     avaliacaoGeral: 0,
     atendimento: '',
     agilidade: '',

@@ -15,13 +15,23 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { StarRating } from '@/components/star-rating';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 
 interface StepThreeProps {
   nextStep: () => void;
@@ -30,12 +40,16 @@ interface StepThreeProps {
 }
 
 const SurveySchema = z.object({
-  comoNosConheceu: z.enum(['Instagram', 'indicação', 'outros'], { required_error: 'Campo obrigatório.' }),
+  comoNosConheceu: z.enum(['Google', 'Presencialmente', 'Mais delivery', 'Instagram', 'Blogueira'], { required_error: 'Campo obrigatório.' }),
+  blogueiraNome: z.string().optional(),
   avaliacaoGeral: z.number().min(1, { message: 'Por favor, dê uma nota.' }).max(5),
   atendimento: z.enum(['Excelente', 'Bom', 'Regular', 'Ruim'], { required_error: 'Campo obrigatório.' }),
   agilidade: z.enum(['Muito rápido', 'Dentro do esperado', 'Demorado'], { required_error: 'Campo obrigatório.' }),
   burger: z.enum(['Perfeito 🔥', 'Bom 👍', 'Poderia melhorar 🤔'], { required_error: 'Campo obrigatório.' }),
   sugestao: z.string().optional(),
+}).refine(data => !(data.comoNosConheceu === 'Blogueira' && !data.blogueiraNome), {
+  message: "Por favor, informe o nome da blogueira.",
+  path: ['blogueiraNome'],
 });
 
 type SurveyFormData = z.infer<typeof SurveySchema>;
@@ -48,15 +62,19 @@ const questions: (keyof SurveyFormData)[] = [
   'burger',
 ];
 
+const comoNosConheceuOptions = ['Google', 'Presencialmente', 'Mais delivery', 'Instagram', 'Blogueira'];
+
 export default function StepThree({ nextStep, formData, updateFormData }: StepThreeProps) {
   const [progress, setProgress] = useState(0);
   const [isPending, startTransition] = useTransition();
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<SurveyFormData>({
     resolver: zodResolver(SurveySchema),
     defaultValues: {
       comoNosConheceu: formData.comoNosConheceu || undefined,
+      blogueiraNome: formData.blogueiraNome || '',
       avaliacaoGeral: formData.avaliacaoGeral || 0,
       atendimento: formData.atendimento || undefined,
       agilidade: formData.agilidade || undefined,
@@ -65,10 +83,13 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
     },
   });
 
-  const watchedFields = form.watch(questions);
+  const watchedFields = form.watch();
 
   useEffect(() => {
-    const answeredCount = watchedFields.filter(val => val !== undefined && val !== 0 && val !== '').length;
+    const answeredCount = questions.filter(q => {
+      const value = watchedFields[q as keyof SurveyFormData];
+      return value !== undefined && value !== 0 && value !== '';
+    }).length;
     setProgress((answeredCount / questions.length) * 100);
   }, [watchedFields]);
 
@@ -123,7 +144,74 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
         <CardContent className="p-0">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {renderRadioGroup('comoNosConheceu', 'Por onde você nos conheceu?', ['Instagram', 'indicação', 'outros'])}
+            <FormField
+                control={form.control}
+                name="comoNosConheceu"
+                render={({ field }) => (
+                  <FormItem className="space-y-3 text-left p-4 border rounded-lg bg-card">
+                    <FormLabel className="text-base font-semibold">Por onde você nos conheceu?</FormLabel>
+                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between">
+                          {field.value ? (
+                            <span>
+                              {field.value}
+                              {field.value === 'Blogueira' && watchedFields.blogueiraNome && `: ${watchedFields.blogueiraNome}`}
+                            </span>
+                          ) : 'Selecione uma opção'}
+                          <ChevronDown className="h-4 w-4 opacity-50" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Por onde você nos conheceu?</DialogTitle>
+                        </DialogHeader>
+                        <RadioGroup
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            if (value !== 'Blogueira') {
+                              form.setValue('blogueiraNome', '');
+                            }
+                          }}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-2 py-4"
+                        >
+                          {comoNosConheceuOptions.map((option) => (
+                            <FormItem key={option} className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value={option} />
+                              </FormControl>
+                              <FormLabel className="font-normal text-base">{option}</FormLabel>
+                            </FormItem>
+                          ))}
+                        </RadioGroup>
+                        {watchedFields.comoNosConheceu === 'Blogueira' && (
+                           <FormField
+                            control={form.control}
+                            name="blogueiraNome"
+                            render={({ field: blogueiraField }) => (
+                              <FormItem className="animate-in fade-in-50 duration-300">
+                                <FormLabel>Nome da/do blogueira(o)</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Ex: @baianoburger" {...blogueiraField} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button type="button">Confirmar</Button>
+                          </DialogClose>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
 
               <FormField
                 control={form.control}
