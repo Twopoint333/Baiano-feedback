@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 import { z } from 'zod';
 import { useEffect, useState, useTransition } from 'react';
 import type { FormData } from '@/app/page';
@@ -63,6 +63,17 @@ const questions: (keyof SurveyFormData)[] = [
   'burger',
 ];
 
+const questionOrder: (keyof SurveyFormData)[] = [
+  'comoNosConheceu',
+  'avaliacaoGeral',
+  'atendimento',
+  'agilidade',
+  'burger',
+  'melhoriaBurger',
+  'sugestao',
+];
+
+
 const comoNosConheceuOptions = ['Google', 'Presencialmente', 'Mais delivery', 'Instagram', 'Blogueira'];
 
 export default function StepThree({ nextStep, formData, updateFormData }: StepThreeProps) {
@@ -83,6 +94,8 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
       melhoriaBurger: formData.melhoriaBurger || '',
       sugestao: formData.sugestao || '',
     },
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
   });
 
   const watchedFields = form.watch();
@@ -94,6 +107,22 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
     }).length;
     setProgress((answeredCount / questions.length) * 100);
   }, [watchedFields]);
+
+  const onInvalid = (errors: FieldErrors<SurveyFormData>) => {
+    const firstErrorField = questionOrder.find(field => errors[field]);
+    if (firstErrorField) {
+      const element = document.getElementsByName(firstErrorField)[0];
+      if (element) {
+        element.closest('[data-form-item-container]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+         // Fallback for elements not found by name (like star rating)
+         const formElement = (form.control._fields[firstErrorField] as any)?._f.ref;
+         formElement?.closest('[data-form-item-container]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const onSubmit = (data: SurveyFormData) => {
     const fullData = { ...formData, ...data };
@@ -113,7 +142,7 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
       control={form.control}
       name={name as any}
       render={({ field }) => (
-        <FormItem className="space-y-3 text-left p-4 border rounded-lg bg-card">
+        <FormItem data-form-item-container className="space-y-3 text-left p-4 border rounded-lg bg-card">
           <FormLabel className="text-base font-semibold">{label}</FormLabel>
           <FormControl>
             <RadioGroup
@@ -145,12 +174,12 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
         </CardHeader>
         <CardContent className="p-0">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-6">
             <FormField
                 control={form.control}
                 name="comoNosConheceu"
                 render={({ field }) => (
-                  <FormItem className="space-y-3 text-left p-4 border rounded-lg bg-card">
+                  <FormItem data-form-item-container className="space-y-3 text-left p-4 border rounded-lg bg-card">
                     <FormLabel className="text-base font-semibold">Por onde você nos conheceu?</FormLabel>
                     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                       <DialogTrigger asChild>
@@ -219,7 +248,7 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
                 control={form.control}
                 name="avaliacaoGeral"
                 render={({ field }) => (
-                  <FormItem className="space-y-3 text-left p-4 border rounded-lg bg-card">
+                  <FormItem data-form-item-container className="space-y-3 text-left p-4 border rounded-lg bg-card">
                     <FormLabel className="text-base font-semibold">Como você avalia o Baiano Burger?</FormLabel>
                     <FormControl>
                        <StarRating value={field.value} onValueChange={field.onChange} />
@@ -233,7 +262,7 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
               
               {renderRadioGroup('agilidade', 'Agilidade no preparo do pedido', ['Muito rápido', 'Dentro do esperado', 'Demorado'])}
               
-              <div className="space-y-3 text-left p-4 border rounded-lg bg-card">
+              <div data-form-item-container className="space-y-3 text-left p-4 border rounded-lg bg-card">
                 {renderRadioGroup('burger', 'Como estava o seu burger?', ['Perfeito 🔥', 'Bom 👍', 'Poderia melhorar 🤔'])}
                 {watchedFields.burger === 'Poderia melhorar 🤔' && (
                   <FormField
@@ -260,7 +289,7 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
                 control={form.control}
                 name="sugestao"
                 render={({ field }) => (
-                  <FormItem className="text-left p-4 border rounded-lg bg-card">
+                  <FormItem data-form-item-container className="text-left p-4 border rounded-lg bg-card">
                     <FormLabel className="text-base font-semibold">Sugestões (opcional)</FormLabel>
                     <FormControl>
                       <Textarea
