@@ -171,8 +171,7 @@ export function Roulette() {
       if (progress < 1) {
         animationFrameId.current = requestAnimationFrame(animate);
       } else {
-        const finalRotation = angle % 360;
-        setRotation(finalRotation);
+        setRotation(finalDeg);
         setSpinResult(items[winningSector].text);
         setIsSpinning(false);
       }
