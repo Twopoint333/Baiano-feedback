@@ -10,7 +10,7 @@ import { Logo } from '@/components/logo';
 export type FormData = {
   nome: string;
   telefone: string;
-  conheceInstagram: 'Sim' | 'Não' | '';
+  comoNosConheceu: 'Instagram' | 'indicação' | 'outros' | '';
   avaliacaoGeral: number;
   atendimento: 'Excelente' | 'Bom' | 'Regular' | 'Ruim' | '';
   agilidade: 'Muito rápido' | 'Dentro do esperado' | 'Demorado' | '';
@@ -23,7 +23,7 @@ export default function Home() {
   const [formData, setFormData] = useState<FormData>({
     nome: '',
     telefone: '',
-    conheceInstagram: '',
+    comoNosConheceu: '',
     avaliacaoGeral: 0,
     atendimento: '',
     agilidade: '',

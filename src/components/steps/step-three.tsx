@@ -31,7 +31,7 @@ interface StepThreeProps {
 }
 
 const SurveySchema = z.object({
-  conheceInstagram: z.enum(['Sim', 'Não'], { required_error: 'Campo obrigatório.' }),
+  comoNosConheceu: z.enum(['Instagram', 'indicação', 'outros'], { required_error: 'Campo obrigatório.' }),
   avaliacaoGeral: z.number().min(1, { message: 'Por favor, dê uma nota.' }).max(5),
   atendimento: z.enum(['Excelente', 'Bom', 'Regular', 'Ruim'], { required_error: 'Campo obrigatório.' }),
   agilidade: z.enum(['Muito rápido', 'Dentro do esperado', 'Demorado'], { required_error: 'Campo obrigatório.' }),
@@ -42,7 +42,7 @@ const SurveySchema = z.object({
 type SurveyFormData = z.infer<typeof SurveySchema>;
 
 const questions: (keyof SurveyFormData)[] = [
-  'conheceInstagram',
+  'comoNosConheceu',
   'avaliacaoGeral',
   'atendimento',
   'agilidade',
@@ -57,7 +57,7 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
   const form = useForm<SurveyFormData>({
     resolver: zodResolver(SurveySchema),
     defaultValues: {
-      conheceInstagram: formData.conheceInstagram || undefined,
+      comoNosConheceu: formData.comoNosConheceu || undefined,
       avaliacaoGeral: formData.avaliacaoGeral || 0,
       atendimento: formData.atendimento || undefined,
       agilidade: formData.agilidade || undefined,
@@ -133,7 +133,7 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
         <CardContent className="p-0">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {renderRadioGroup('conheceInstagram', 'Você já conhece o nosso Instagram?', ['Sim', 'Não'])}
+              {renderRadioGroup('comoNosConheceu', 'Por onde você nos conheceu?', ['Instagram', 'indicação', 'outros'])}
 
               <FormField
                 control={form.control}
