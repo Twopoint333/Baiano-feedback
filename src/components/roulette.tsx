@@ -147,12 +147,8 @@ export function Roulette() {
     setSpinResult(null);
 
     const fullSpins = Math.floor(Math.random() * 2) + 6;
-    const winningSector = Math.floor(Math.random() * items.length);
-    const degPerItem = 360 / items.length;
-    
-    // Calculate the center of the winning sector to align with the top pointer
-    const finalAngleOffset = (winningSector * degPerItem) + (degPerItem / 2);
-    const finalDeg = (fullSpins * 360) + (360 - finalAngleOffset);
+    const randomFinalAngle = Math.random() * 360;
+    const finalDeg = (fullSpins * 360) + randomFinalAngle;
     
     let duration = 5000;
     let start: number | null = null;
@@ -164,15 +160,21 @@ export function Roulette() {
       const elapsed = timestamp - start;
       const progress = Math.min(elapsed / duration, 1);
       const eased = easeOutQuint(progress);
-      const angle = initialRotation + totalChange * eased;
+      const currentAngle = initialRotation + totalChange * eased;
 
-      setRotation(angle);
+      setRotation(currentAngle);
 
       if (progress < 1) {
         animationFrameId.current = requestAnimationFrame(animate);
       } else {
-        setRotation(finalDeg);
-        setSpinResult(items[winningSector].text);
+        const finalRotation = currentAngle % 360;
+        setRotation(finalRotation);
+        
+        const degPerItem = 360 / items.length;
+        const pointerAngle = (360 - finalRotation + 360) % 360;
+        const winningSectorIndex = Math.floor(pointerAngle / degPerItem);
+        
+        setSpinResult(items[winningSectorIndex].text);
         setIsSpinning(false);
       }
     };
