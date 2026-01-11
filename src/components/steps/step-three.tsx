@@ -32,6 +32,7 @@ import { StarRating } from '@/components/star-rating';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronDown, Loader2 } from 'lucide-react';
+import { findDOMNode } from 'react-dom';
 
 interface StepThreeProps {
   nextStep: () => void;
@@ -116,8 +117,13 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
         element.closest('[data-form-item-container]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
          // Fallback for elements not found by name (like star rating)
-         const formElement = (form.control._fields[firstErrorField] as any)?._f.ref;
-         formElement?.closest('[data-form-item-container]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         const fieldRef = (form.control._fields[firstErrorField] as any)?._f.ref;
+         if (fieldRef && fieldRef.current) {
+            const domNode = findDOMNode(fieldRef.current);
+            if (domNode instanceof Element) {
+              domNode.closest('[data-form-item-container]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+         }
       }
     } else {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -129,6 +135,8 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
     updateFormData(fullData);
     
     startTransition(() => {
+      // Here you would typically send the data to your backend
+      // await saveSurveyData(fullData);
       toast({
         title: "Sucesso!",
         description: "Sua pesquisa foi enviada.",
@@ -247,11 +255,11 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
               <FormField
                 control={form.control}
                 name="avaliacaoGeral"
-                render={({ field }) => (
+                render={({ field: { onChange, value, ref } }) => (
                   <FormItem data-form-item-container className="space-y-3 text-left p-4 border rounded-lg bg-card">
                     <FormLabel className="text-base font-semibold">Como você avalia o Baiano Burger?</FormLabel>
                     <FormControl>
-                       <StarRating value={field.value} onValueChange={field.onChange} />
+                       <StarRating value={value} onValueChange={onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
