@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PartyPopper, Timer, Gift, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Roulette } from '@/components/roulette';
 
 const GOOGLE_REVIEW_LINK = 'https://maps.app.goo.gl/Z9txxdfoj3puf7V49?g_st=ic';
 const MIN_REVIEW_TIME_S = 30; // 30 segundos
@@ -103,10 +104,7 @@ export default function StepFour() {
              </p>
              <Card>
                 <CardContent className="p-6">
-                    {/* O componente da roleta será inserido aqui */}
-                    <div className="bg-muted aspect-square rounded-full flex items-center justify-center">
-                       <p className="text-muted-foreground">Roleta em breve...</p>
-                    </div>
+                   <Roulette />
                 </CardContent>
              </Card>
              <p className="text-lg text-foreground/80 leading-relaxed">
