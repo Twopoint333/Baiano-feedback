@@ -2,15 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { Gift } from 'lucide-react';
 
 const PRIZES = [
   'Coca lata',
   'Batata 100g',
   'Batata 200g',
   'Onions 100g',
-  'Frango frito 140g',
+  'FRANGO 140G',
 ];
 
 const BRAND_COLORS = [
@@ -43,6 +41,7 @@ const getFittedFontSize = (text: string, maxWidth: number, baseFontSize: number)
   return fontSize;
 };
 
+
 const RouletteWheel = ({
   items,
   rotation,
@@ -73,16 +72,14 @@ const RouletteWheel = ({
         </filter>
       </defs>
       {items.map((item, i) => {
-        const startAngle = (2 * Math.PI * i) / n - Math.PI / 2;
-        const endAngle = (2 * Math.PI * (i + 1)) / n - Math.PI / 2;
-        const x1 = cx + r * Math.cos(startAngle);
-        const y1 = cy + r * Math.sin(startAngle);
-        const x2 = cx + r * Math.cos(endAngle);
-        const y2 = cy + r * Math.sin(endAngle);
-        const largeArc =
-          (endAngle - startAngle + 2 * Math.PI) % (2 * Math.PI) > Math.PI
-            ? 1
-            : 0;
+        const startAngleRad = (2 * Math.PI * i) / n - Math.PI / 2;
+        const endAngleRad = (2 * Math.PI * (i + 1)) / n - Math.PI / 2;
+        
+        const x1 = cx + r * Math.cos(startAngleRad);
+        const y1 = cy + r * Math.sin(startAngleRad);
+        const x2 = cx + r * Math.cos(endAngleRad);
+        const y2 = cy + r * Math.sin(endAngleRad);
+        const largeArc = (endAngleRad - startAngleRad > Math.PI) ? 1 : 0;
 
         const pathData = [
           `M ${cx} ${cy}`,
@@ -91,19 +88,20 @@ const RouletteWheel = ({
           'Z',
         ].join(' ');
 
-        const angle = (startAngle + endAngle) / 2;
-        const tx = cx + r * 0.65 * Math.cos(angle);
-        const ty = cy + r * 0.65 * Math.sin(angle);
-        const textAngle = (angle * 180) / Math.PI;
-
-        const arcLen = 2 * Math.PI * r * (1 / n) * 0.65 * 0.85;
+        const midAngleRad = (startAngleRad + endAngleRad) / 2;
+        const textAngleDeg = (midAngleRad * 180 / Math.PI) + 90;
+        
+        const tx = cx + r * 0.65 * Math.cos(midAngleRad);
+        const ty = cy + r * 0.65 * Math.sin(midAngleRad);
+        
+        const arcLen = (Math.PI * r) / n * 1.3;
         const textVal = item.text || '';
         const fontSize = getFittedFontSize(textVal, arcLen, 16);
 
         return (
           <g key={i}>
-            <path d={pathData} fill={item.color} stroke="#FFF" strokeWidth={0.8} />
-            <text
+            <path d={pathData} fill={item.color} stroke="#FFF" strokeWidth={1.5} />
+             <text
               x={tx}
               y={ty}
               textAnchor="middle"
@@ -112,7 +110,7 @@ const RouletteWheel = ({
               fill="#fff"
               fontWeight="700"
               fontFamily="'PT Sans', sans-serif"
-              transform={`rotate(${textAngle}, ${tx}, ${ty})`}
+              transform={`rotate(${textAngleDeg}, ${tx}, ${ty})`}
               style={{ filter: 'url(#shadow)' }}
             >
               {textVal}
@@ -170,8 +168,8 @@ export function Roulette() {
         setRotation(finalRotation);
 
         const degPerItem = 360 / items.length;
-        const pointerDeg = (360 - (finalRotation % 360) + 360) % 360;
-        const sectorIndex = Math.floor(pointerDeg / degPerItem) % items.length;
+        const pointerDeg = (360 - (finalRotation % 360) + 90) % 360;
+        const sectorIndex = Math.floor(pointerDeg / degPerItem);
 
         setSpinResult(items[sectorIndex].text);
       }
