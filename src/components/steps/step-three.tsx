@@ -46,6 +46,7 @@ const SurveySchema = z.object({
   atendimento: z.enum(['Excelente', 'Bom', 'Regular', 'Ruim'], { required_error: 'Campo obrigatório.' }),
   agilidade: z.enum(['Muito rápido', 'Dentro do esperado', 'Demorado'], { required_error: 'Campo obrigatório.' }),
   burger: z.enum(['Perfeito 🔥', 'Bom 👍', 'Poderia melhorar 🤔'], { required_error: 'Campo obrigatório.' }),
+  melhoriaBurger: z.string().optional(),
   sugestao: z.string().optional(),
 }).refine(data => !(data.comoNosConheceu === 'Blogueira' && !data.blogueiraNome), {
   message: "Por favor, informe o nome da blogueira.",
@@ -79,6 +80,7 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
       atendimento: formData.atendimento || undefined,
       agilidade: formData.agilidade || undefined,
       burger: formData.burger || undefined,
+      melhoriaBurger: formData.melhoriaBurger || '',
       sugestao: formData.sugestao || '',
     },
   });
@@ -231,7 +233,28 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
               
               {renderRadioGroup('agilidade', 'Agilidade no preparo do pedido', ['Muito rápido', 'Dentro do esperado', 'Demorado'])}
               
-              {renderRadioGroup('burger', 'Como estava o seu burger?', ['Perfeito 🔥', 'Bom 👍', 'Poderia melhorar 🤔'])}
+              <div className="space-y-3 text-left p-4 border rounded-lg bg-card">
+                {renderRadioGroup('burger', 'Como estava o seu burger?', ['Perfeito 🔥', 'Bom 👍', 'Poderia melhorar 🤔'])}
+                {watchedFields.burger === 'Poderia melhorar 🤔' && (
+                  <FormField
+                    control={form.control}
+                    name="melhoriaBurger"
+                    render={({ field }) => (
+                      <FormItem className="animate-in fade-in-50 duration-300 pt-4">
+                        <FormLabel>Por favor, como podemos fazer isso?</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Seu feedback nos ajuda a crescer..."
+                            className="resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
 
               <FormField
                 control={form.control}

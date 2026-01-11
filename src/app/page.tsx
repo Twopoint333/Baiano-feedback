@@ -16,6 +16,7 @@ export type FormData = {
   atendimento: 'Excelente' | 'Bom' | 'Regular' | 'Ruim' | '';
   agilidade: 'Muito rápido' | 'Dentro do esperado' | 'Demorado' | '';
   burger: 'Perfeito 🔥' | 'Bom 👍' | 'Poderia melhorar 🤔' | '';
+  melhoriaBurger: string;
   sugestao: string;
 };
 
@@ -30,6 +31,7 @@ export default function Home() {
     atendimento: '',
     agilidade: '',
     burger: '',
+    melhoriaBurger: '',
     sugestao: '',
   });
 
