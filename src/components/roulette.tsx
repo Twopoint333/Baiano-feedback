@@ -17,6 +17,7 @@ const BRAND_COLORS = [
   '#F8961E', // Laranja Amarelado
   '#F9C74F', // Amarelo
   '#90BE6D', // Verde
+  '#43AA8B', // Verde Azulado
 ];
 
 
@@ -46,9 +47,13 @@ const getFittedFontSize = (text: string, maxWidth: number, baseFontSize: number)
 const RouletteWheel = ({
   items,
   rotation,
+  isSpinning,
+  spinDuration
 }: {
   items: { text: string; color: string }[];
   rotation: number;
+  isSpinning: boolean;
+  spinDuration: number;
 }) => {
   const n = items.length;
   if (n === 0) return null;
@@ -61,11 +66,13 @@ const RouletteWheel = ({
 
   return (
     <svg
-      className="transition-transform duration-[50ms]"
       width="100%"
       height="100%"
       viewBox={`0 0 ${width} ${height}`}
-      style={{ transform: `rotate(${rotation}deg)` }}
+      style={{
+        transform: `rotate(${rotation}deg)`,
+        transition: isSpinning ? `transform ${spinDuration}ms cubic-bezier(0.25, 0.1, 0.25, 1)` : 'none',
+      }}
     >
       <defs>
         <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
@@ -132,15 +139,15 @@ export function Roulette() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [spinResult, setSpinResult] = useState<string | null>(null);
-  const animationFrameId = useRef<number | null>(null);
-  const rotationRef = useRef(0);
+  const currentRotationRef = useRef(0);
+  const rouletteRef = useRef<HTMLDivElement>(null);
+
+  const spinDuration = 6000;
 
   const items = PRIZES.map((prize, index) => ({
     text: prize,
     color: BRAND_COLORS[index % BRAND_COLORS.length],
   }));
-
-  const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
 
   const spin = () => {
     if (isSpinning) return;
@@ -148,48 +155,41 @@ export function Roulette() {
     setIsSpinning(true);
     setSpinResult(null);
 
-    const fullSpins = Math.floor(Math.random() * 4) + 8; // 8 a 11 voltas
+    const fullSpins = Math.floor(Math.random() * 4) + 8;
     const randomFinalAngle = Math.random() * 360;
-    const finalDeg = (fullSpins * 360) + randomFinalAngle;
+    const finalRotation = fullSpins * 360 + randomFinalAngle;
     
-    let duration = 6000; // 6 segundos
-    let start: number | null = null;
-    const initialRotation = rotationRef.current;
+    // Add current rotation to make it spin from the last position
+    const totalRotation = (currentRotationRef.current % 360) + finalRotation;
 
-    const animate = (timestamp: number) => {
-      if (!start) start = timestamp;
-      const elapsed = timestamp - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = easeOutQuint(progress);
-      const currentAngle = initialRotation + finalDeg * eased;
-
-      setRotation(currentAngle);
-
-      if (progress < 1) {
-        animationFrameId.current = requestAnimationFrame(animate);
-      } else {
-        const finalRotationValue = currentAngle;
-        rotationRef.current = finalRotationValue;
-        
-        const degPerItem = 360 / items.length;
-        const pointerAngle = (360 - (finalRotationValue % 360) + 360) % 360;
-        const winningSectorIndex = Math.floor(pointerAngle / degPerItem);
-        
-        setSpinResult(items[winningSectorIndex].text);
-        setIsSpinning(false);
-      }
-    };
-
-    animationFrameId.current = requestAnimationFrame(animate);
+    setRotation(totalRotation);
+    currentRotationRef.current = totalRotation;
   };
   
   useEffect(() => {
+    const handleTransitionEnd = () => {
+      if (!isSpinning) return;
+
+      const finalAngle = currentRotationRef.current;
+      const normalizedAngle = (360 - (finalAngle % 360)) % 360;
+      const degPerItem = 360 / items.length;
+      const winningSectorIndex = Math.floor(normalizedAngle / degPerItem);
+
+      setSpinResult(items[winningSectorIndex].text);
+      setIsSpinning(false);
+    };
+
+    const rouletteElement = rouletteRef.current;
+    if (rouletteElement) {
+      rouletteElement.addEventListener('transitionend', handleTransitionEnd);
+    }
+
     return () => {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
+      if (rouletteElement) {
+        rouletteElement.removeEventListener('transitionend', handleTransitionEnd);
       }
     };
-  }, []);
+  }, [isSpinning, items]);
 
   const hasSpun = spinResult !== null;
 
@@ -201,9 +201,15 @@ export function Roulette() {
           style={{ boxShadow: '0 12px 36px 0 rgba(0,0,0,0.16), 0 2px 8px 0 rgba(0,0,0,0.10)'}}
          />
         <div
+          ref={rouletteRef}
           className="h-full w-full rounded-full"
         >
-          <RouletteWheel items={items} rotation={rotation} />
+          <RouletteWheel 
+            items={items} 
+            rotation={rotation}
+            isSpinning={isSpinning}
+            spinDuration={spinDuration} 
+          />
         </div>
         <div className="absolute left-1/2 top-[-10px] z-10 -translate-x-1/2 transform drop-shadow-[0_4px_8px_rgba(0,0,0,0.2)]">
           <svg width="44" height="36" viewBox="0 0 44 36">
