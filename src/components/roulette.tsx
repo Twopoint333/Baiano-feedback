@@ -37,6 +37,7 @@ const PrizeSegment = ({ prize, index }: { prize: string; index: number }) => {
             'text-sm font-bold -translate-y-10 transform-gpu max-w-20 text-center',
             isEven ? 'text-foreground' : 'text-primary'
           )}
+          style={{ transform: `translateY(-5.5rem) rotate(-${segmentAngle}deg)` }}
         >
           {prize}
         </span>
@@ -59,8 +60,10 @@ export function Roulette() {
     
     // Pequeno deslocamento para centralizar no meio do segmento
     const angleOffset = segmentAngle / 2;
+    // O ponteiro está no topo (apontando para baixo), então subtraímos 90 graus
+    const pointerCorrection = -90;
 
-    const totalRotation = randomSpins * 360 + stopAngle + angleOffset;
+    const totalRotation = randomSpins * 360 - stopAngle - angleOffset - pointerCorrection;
 
     setIsSpinning(true);
     setSpinResult(null);
@@ -87,7 +90,10 @@ export function Roulette() {
           ))}
         </div>
         <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2 transform">
-          <ChevronRight className="h-10 w-10 -rotate-90 fill-destructive text-destructive-foreground stroke-[4]" />
+          <ChevronRight className="h-10 w-10 rotate-90 fill-destructive text-destructive-foreground stroke-[4]" />
+        </div>
+        <div className="absolute z-10 flex h-16 w-16 items-center justify-center rounded-full bg-background shadow-inner">
+            <div className="h-12 w-12 rounded-full bg-card shadow-md"></div>
         </div>
       </div>
       
@@ -101,7 +107,7 @@ export function Roulette() {
          <div className="space-y-4 animate-in fade-in-50 duration-500">
            <h2 className="text-2xl font-bold font-headline">Parabéns! Você ganhou:</h2>
            <p className="text-3xl font-bold text-primary bg-accent rounded-lg p-4">
-             {prizes[spinResult]}
+             {prizes[spinResult!]}
            </p>
          </div>
       )}
