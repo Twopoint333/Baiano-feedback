@@ -13,6 +13,7 @@ export async function saveSurvey(data: FormData) {
     return { success: true };
   } catch (error) {
     console.error("Error adding document: ", error);
+    // The error object might not be serializable, so we return a generic message.
     return { success: false, error: 'Ocorreu um erro ao enviar sua pesquisa. Tente novamente.' };
   }
 }

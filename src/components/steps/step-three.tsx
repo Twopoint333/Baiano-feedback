@@ -74,8 +74,8 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
   }, [watchedFields]);
 
   const onSubmit = (data: SurveyFormData) => {
-    updateFormData(data);
     const fullData = { ...formData, ...data };
+    updateFormData(fullData);
     
     startTransition(async () => {
       const result = await saveSurvey(fullData);
