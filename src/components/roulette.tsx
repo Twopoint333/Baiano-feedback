@@ -14,8 +14,8 @@ const PRIZES = [
 const BRAND_COLORS = [
   '#F94144', // Vermelho
   '#F3722C', // Laranja
-  '#F8961E', // Laranja Amarelado
   '#F9C74F', // Amarelo
+  '#F8961E', // Laranja Amarelado
   '#FF5722', // Vermelho-Laranja
 ];
 
@@ -172,8 +172,9 @@ export function Roulette() {
         setRotation(finalRotation);
 
         const degPerItem = 360 / items.length;
-        const pointerDeg = (360 - (finalRotation % 360) + 90) % 360;
-        const sectorIndex = Math.floor(pointerDeg / degPerItem);
+        const pointerAngle = 270; // O ponteiro está no topo (270 graus ou -90)
+        const finalAngle = (360 - finalRotation + pointerAngle) % 360;
+        const sectorIndex = Math.floor(finalAngle / degPerItem);
 
         setSpinResult(items[sectorIndex].text);
       }
