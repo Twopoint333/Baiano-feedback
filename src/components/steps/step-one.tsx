@@ -25,7 +25,7 @@ interface StepOneProps {
 }
 
 const phoneRegex = new RegExp(
-  /^\(?([0-9]{2})\)?(\s|-)?(9?[0-9]{4,5})(\s|-)?([0-9]{4})$/
+  /^\(?([0-9]{2})\)?(\s|-)?(9[0-9]{4})-?([0-9]{4})$/
 );
 
 const FormSchema = z.object({
@@ -53,16 +53,9 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
       formatted = `(${input.substring(0, 2)}`;
     }
     if (input.length > 2) {
-      if (input.length > 10) { // Celular com 9 dígitos
-        formatted += `) ${input.substring(2, 7)}`;
-        if (input.length > 7) {
-          formatted += `-${input.substring(7, 11)}`;
-        }
-      } else { // Telefone fixo
-        formatted += `) ${input.substring(2, 6)}`;
-        if (input.length > 6) {
-          formatted += `-${input.substring(6, 10)}`;
-        }
+      formatted += `) ${input.substring(2, 7)}`;
+      if (input.length > 7) {
+        formatted += `-${input.substring(7, 11)}`;
       }
     }
     form.setValue('telefone', formatted);
@@ -78,7 +71,7 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-bold">Antes de começar...</CardTitle>
-        <CardDescription>...conta pra gente rapidinho 👇</CardDescription>
+        <CardDescription className="animate-text-color-sweep">conta pra gente rapidinho 👇</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
