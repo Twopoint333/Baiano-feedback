@@ -6,7 +6,7 @@ import Image from "next/image";
 export function Logo({ className }: { className?: string }) {
   return (
     <div className={cn("inline-flex items-center gap-3", className)}>
-      <div className="bg-primary rounded-full p-2">
+      <div className="bg-primary rounded-md p-2">
         <Image
           src="/logo.png"
           alt="Baiano Burger Logo"
