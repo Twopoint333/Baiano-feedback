@@ -152,7 +152,7 @@ export function Roulette() {
     
     let duration = 5000;
     let start: number | null = null;
-    const initialRotation = rotation % 360;
+    const initialRotation = rotation;
     const totalChange = finalDeg - initialRotation;
 
     const animate = (timestamp: number) => {
@@ -167,11 +167,10 @@ export function Roulette() {
       if (progress < 1) {
         animationFrameId.current = requestAnimationFrame(animate);
       } else {
-        const finalRotation = currentAngle % 360;
-        setRotation(finalRotation);
+        const finalRotationValue = currentAngle;
         
         const degPerItem = 360 / items.length;
-        const pointerAngle = (360 - finalRotation + 360) % 360;
+        const pointerAngle = (360 - (finalRotationValue % 360) + 360) % 360;
         const winningSectorIndex = Math.floor(pointerAngle / degPerItem);
         
         setSpinResult(items[winningSectorIndex].text);
