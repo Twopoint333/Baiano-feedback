@@ -25,7 +25,7 @@ interface StepOneProps {
 }
 
 const phoneRegex = new RegExp(
-  /^([0-9]{2})?(\s|-)?(9?[0-9]{4})(\s|-)?([0-9]{4})$/
+  /^\(?([0-9]{2})\)?(\s|-)?(9?[0-9]{4,5})(\s|-)?([0-9]{4})$/
 );
 
 const FormSchema = z.object({
@@ -53,10 +53,17 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
       formatted = `(${input.substring(0, 2)}`;
     }
     if (input.length > 2) {
-      formatted += `) ${input.substring(2, 7)}`;
-    }
-    if (input.length > 7) {
-      formatted += `-${input.substring(7, 11)}`;
+      if (input.length > 10) { // Celular com 9 dígitos
+        formatted += `) ${input.substring(2, 7)}`;
+        if (input.length > 7) {
+          formatted += `-${input.substring(7, 11)}`;
+        }
+      } else { // Telefone fixo
+        formatted += `) ${input.substring(2, 6)}`;
+        if (input.length > 6) {
+          formatted += `-${input.substring(6, 10)}`;
+        }
+      }
     }
     form.setValue('telefone', formatted);
   };
