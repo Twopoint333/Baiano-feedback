@@ -147,6 +147,7 @@ export function Roulette() {
     // Inicializa o áudio no lado do cliente
     audioRef.current = new Audio('/roulette-spin.mp3');
     audioRef.current.loop = true;
+    audioRef.current.volume = 0.2;
   }, []);
 
   const items = PRIZES.map((prize, index) => ({
