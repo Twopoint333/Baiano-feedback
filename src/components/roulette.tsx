@@ -20,7 +20,6 @@ const BRAND_COLORS = [
   '#43AA8B', // Verde Azulado
 ];
 
-
 const getFittedFontSize = (text: string, maxWidth: number, baseFontSize: number): number => {
   if (typeof document === 'undefined') return baseFontSize;
 
@@ -43,17 +42,16 @@ const getFittedFontSize = (text: string, maxWidth: number, baseFontSize: number)
   return fontSize;
 };
 
-
 const RouletteWheel = ({
   items,
-  rotation,
   isSpinning,
-  spinDuration
+  spinDuration,
+  rotation,
 }: {
   items: { text: string; color: string }[];
-  rotation: number;
   isSpinning: boolean;
   spinDuration: number;
+  rotation: number;
 }) => {
   const n = items.length;
   if (n === 0) return null;
@@ -71,7 +69,9 @@ const RouletteWheel = ({
       viewBox={`0 0 ${width} ${height}`}
       style={{
         transform: `rotate(${rotation}deg)`,
-        transition: isSpinning ? `transform ${spinDuration}ms cubic-bezier(0.25, 0.1, 0.25, 1)` : 'none',
+        transition: isSpinning
+          ? `transform ${spinDuration}ms cubic-bezier(0.25, 0.1, 1, 1)`
+          : 'none',
       }}
     >
       <defs>
@@ -134,15 +134,20 @@ const RouletteWheel = ({
   );
 };
 
-
 export function Roulette() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [spinResult, setSpinResult] = useState<string | null>(null);
   const currentRotationRef = useRef(0);
   const rouletteRef = useRef<HTMLDivElement>(null);
-
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const spinDuration = 6000;
+
+  useEffect(() => {
+    // Inicializa o áudio no lado do cliente
+    audioRef.current = new Audio('/roulette-spin.mp3');
+    audioRef.current.loop = true;
+  }, []);
 
   const items = PRIZES.map((prize, index) => ({
     text: prize,
@@ -152,29 +157,37 @@ export function Roulette() {
   const spin = () => {
     if (isSpinning) return;
 
+    if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play();
+    }
+
     setIsSpinning(true);
     setSpinResult(null);
 
     const fullSpins = Math.floor(Math.random() * 4) + 8;
     const randomFinalAngle = Math.random() * 360;
     const finalRotation = fullSpins * 360 + randomFinalAngle;
-    
-    // Add current rotation to make it spin from the last position
-    const totalRotation = (currentRotationRef.current % 360) + finalRotation;
 
-    setRotation(totalRotation);
-    currentRotationRef.current = totalRotation;
+    const newTotalRotation = currentRotationRef.current + finalRotation;
+    setRotation(newTotalRotation);
+    currentRotationRef.current = newTotalRotation;
   };
-  
+
   useEffect(() => {
     const handleTransitionEnd = () => {
       if (!isSpinning) return;
+
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
 
       const finalAngle = currentRotationRef.current;
       const normalizedAngle = (360 - (finalAngle % 360)) % 360;
       const degPerItem = 360 / items.length;
       const winningSectorIndex = Math.floor(normalizedAngle / degPerItem);
-
+      
       setSpinResult(items[winningSectorIndex].text);
       setIsSpinning(false);
     };
@@ -208,7 +221,7 @@ export function Roulette() {
             items={items} 
             rotation={rotation}
             isSpinning={isSpinning}
-            spinDuration={spinDuration} 
+            spinDuration={spinDuration}
           />
         </div>
         <div className="absolute left-1/2 top-[-10px] z-10 -translate-x-1/2 transform drop-shadow-[0_4px_8px_rgba(0,0,0,0.2)]">
