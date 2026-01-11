@@ -147,8 +147,12 @@ export function Roulette() {
     setSpinResult(null);
 
     const fullSpins = Math.floor(Math.random() * 2) + 6;
-    const randomOffset = Math.random() * 360;
-    const finalDeg = fullSpins * 360 + randomOffset;
+    const winningSector = Math.floor(Math.random() * items.length);
+    const degPerItem = 360 / items.length;
+    
+    // Calculate the center of the winning sector to align with the top pointer
+    const finalAngleOffset = (winningSector * degPerItem) + (degPerItem / 2);
+    const finalDeg = (fullSpins * 360) + (360 - finalAngleOffset);
     
     let duration = 5000;
     let start: number | null = null;
@@ -167,16 +171,10 @@ export function Roulette() {
       if (progress < 1) {
         animationFrameId.current = requestAnimationFrame(animate);
       } else {
-        setIsSpinning(false);
         const finalRotation = angle % 360;
         setRotation(finalRotation);
-
-        const degPerItem = 360 / items.length;
-        const pointerAngle = 270; // O ponteiro está no topo (270 graus ou -90)
-        const finalAngle = (360 - finalRotation + pointerAngle) % 360;
-        const sectorIndex = Math.floor(finalAngle / degPerItem);
-
-        setSpinResult(items[sectorIndex].text);
+        setSpinResult(items[winningSector].text);
+        setIsSpinning(false);
       }
     };
 
