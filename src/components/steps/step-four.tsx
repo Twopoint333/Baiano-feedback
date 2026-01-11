@@ -11,9 +11,9 @@ export default function StepFour() {
   return (
     <div className="w-full space-y-6 animate-in fade-in-50 duration-500">
       <div className="text-center space-y-2">
-        <h1 className="font-headline text-3xl font-bold">Obrigado pela sua resposta 🙌</h1>
+        <h1 className="font-headline text-3xl font-bold">Fala Baiano, chegou a hora do seu prêmio! 🎁</h1>
         <p className="text-foreground/80 text-lg">
-          Agora só falta cumprir a missão para liberar o seu prêmio 👇
+          Nos avalie no Google e desbloqueie a <span className="font-bold text-primary">roleta premiada</span>.
         </p>
       </div>
 
@@ -21,15 +21,15 @@ export default function StepFour() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-bold text-xl">
             <PartyPopper className="h-6 w-6 text-primary" />
-            <span>Missão Final</span>
+            <span>Desbloquear Roleta</span>
           </CardTitle>
           <CardDescription className="text-foreground/90">
-            Avalie o Baiano Burger no Google e ajude a fortalecer nosso trabalho 💛
+            Avalie o Baiano Burger no Google para liberar sua chance de ganhar.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <a href={GOOGLE_REVIEW_LINK} target="_blank" rel="noopener noreferrer" className='w-full'>
-            <Button className="w-full font-bold text-base py-6 bg-accent hover:bg-accent/90 text-accent-foreground">
+            <Button className="w-full font-bold text-base py-6">
               Avaliar no Google agora
             </Button>
           </a>
@@ -37,9 +37,8 @@ export default function StepFour() {
       </Card>
 
       <div className="text-center space-y-4 pt-4">
-        <p className="text-2xl font-bold">Pronto! ✅</p>
         <p className="text-lg text-foreground/80 leading-relaxed">
-          Mostre sua avaliação na tela do celular para a nossa equipe no caixa e retire seu prêmio! 🎁🔥
+          Após avaliar, mostre a tela para nossa equipe no caixa para girar a roleta e retirar seu prêmio! 🔥
         </p>
       </div>
     </div>
