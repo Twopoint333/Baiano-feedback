@@ -14,10 +14,11 @@ const PRIZES = [
 const BRAND_COLORS = [
   '#F94144', // Vermelho
   '#F3722C', // Laranja
-  '#F9C74F', // Amarelo
   '#F8961E', // Laranja Amarelado
-  '#FF5722', // Vermelho-Laranja
+  '#F9C74F', // Amarelo
+  '#90BE6D', // Verde
 ];
+
 
 const getFittedFontSize = (text: string, maxWidth: number, baseFontSize: number): number => {
   if (typeof document === 'undefined') return baseFontSize;
@@ -132,6 +133,7 @@ export function Roulette() {
   const [rotation, setRotation] = useState(0);
   const [spinResult, setSpinResult] = useState<string | null>(null);
   const animationFrameId = useRef<number | null>(null);
+  const rotationRef = useRef(0);
 
   const items = PRIZES.map((prize, index) => ({
     text: prize,
@@ -146,21 +148,20 @@ export function Roulette() {
     setIsSpinning(true);
     setSpinResult(null);
 
-    const fullSpins = Math.floor(Math.random() * 2) + 6;
+    const fullSpins = Math.floor(Math.random() * 4) + 8; // 8 a 11 voltas
     const randomFinalAngle = Math.random() * 360;
     const finalDeg = (fullSpins * 360) + randomFinalAngle;
     
-    let duration = 5000;
+    let duration = 6000; // 6 segundos
     let start: number | null = null;
-    const initialRotation = rotation;
-    const totalChange = finalDeg - initialRotation;
+    const initialRotation = rotationRef.current;
 
     const animate = (timestamp: number) => {
       if (!start) start = timestamp;
       const elapsed = timestamp - start;
       const progress = Math.min(elapsed / duration, 1);
       const eased = easeOutQuint(progress);
-      const currentAngle = initialRotation + totalChange * eased;
+      const currentAngle = initialRotation + finalDeg * eased;
 
       setRotation(currentAngle);
 
@@ -168,6 +169,7 @@ export function Roulette() {
         animationFrameId.current = requestAnimationFrame(animate);
       } else {
         const finalRotationValue = currentAngle;
+        rotationRef.current = finalRotationValue;
         
         const degPerItem = 360 / items.length;
         const pointerAngle = (360 - (finalRotationValue % 360) + 360) % 360;
