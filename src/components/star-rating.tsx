@@ -19,15 +19,15 @@ export function StarRating({ value, onValueChange, totalStars = 5, size = 10 }: 
             type="button"
             key={index}
             onClick={() => onValueChange(starValue)}
-            className="focus:outline-none focus:ring-2 focus:ring-ring rounded-sm"
+            className="focus:outline-none focus:ring-2 focus:ring-ring rounded-sm group"
             aria-label={`Avaliar como ${starValue} de ${totalStars} estrelas`}
           >
             <Star
               className={cn(
-                `h-${size} w-${size} transition-colors`,
+                `h-${size} w-${size} transition-all duration-200 ease-in-out`,
                 starValue <= value
-                  ? 'text-primary fill-primary'
-                  : 'text-muted-foreground/30'
+                  ? 'text-primary fill-primary drop-shadow-[0_0_4px_hsl(var(--primary)/0.5)]'
+                  : 'text-muted-foreground/30 group-hover:text-primary/40 group-hover:scale-110'
               )}
             />
           </button>
