@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { FormData } from '@/app/page';
 import React, { useState } from 'react';
 import { useFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -85,23 +85,28 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
     const prizeDocId = data.telefone.replace(/\D/g, '');
     const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
     
-    // We need to use getDoc for a one-time check on submit
-    const { getDoc } = await import('firebase/firestore');
-    
     try {
       const docSnap = await getDoc(prizeClaimRef);
+      
       if (docSnap.exists()) {
+        // User has already claimed a prize. Show message and STOP.
         setPrizeClaimed(true);
-      } else {
-        setPrizeClaimed(false);
-        nextStep(); // Only proceed if the prize has not been claimed
+        setChecking(false);
+        return; // <-- Explicitly stop execution here
       }
+      
+      // User has not claimed a prize. Proceed to the next step.
+      setPrizeClaimed(false);
+      nextStep();
+
     } catch (error) {
       console.error("Error checking prize claim:", error);
       // Let's be safe and let the user proceed if there's a check error.
       // The backend rules will still prevent a duplicate claim.
       nextStep();
     } finally {
+      // This will only be reached if an error occurs or the check is successful.
+      // The `return` in the `if` block prevents this from running for claimed prizes.
       setChecking(false);
     }
   }
