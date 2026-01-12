@@ -16,8 +16,12 @@ service cloud.firestore {
       // CREATE: Any signed-in user can submit a new survey response.
       allow create: if isSignedIn();
 
-      // UPDATE & DELETE: No client can modify or delete a survey response.
-      allow update, delete: if false;
+      // UPDATE: A user can update their own survey response document.
+      // The `uid` in the existing document must match the authenticated user's `uid`.
+      allow update: if request.auth.uid == resource.data.uid;
+
+      // DELETE: No client can delete a survey response.
+      allow delete: if false;
     }
     
     // Rules for the prize_claims collection

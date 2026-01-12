@@ -84,7 +84,7 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
   const [isPending, startTransition] = useTransition();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
-  const { firestore } = useFirebase();
+  const { firestore, user } = useFirebase();
 
   const form = useForm<SurveyFormData>({
     resolver: zodResolver(SurveySchema),
@@ -146,11 +146,11 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
     startTransition(() => {
       // Sanitize phone number to use as document ID
       const surveyDocId = fullData.telefone.replace(/\D/g, '');
-      if (!firestore || !surveyDocId) {
+      if (!firestore || !surveyDocId || !user) {
         toast({
           variant: 'destructive',
           title: "Erro!",
-          description: "Não foi possível salvar a pesquisa. Telefone inválido.",
+          description: "Não foi possível salvar a pesquisa. Usuário ou telefone inválido.",
         });
         return;
       }
@@ -158,6 +158,7 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
       const surveyDocRef = doc(firestore, 'survey_responses', surveyDocId);
       
       const dataToSave = {
+        uid: user.uid, // Add user's UID
         nome: fullData.nome,
         telefone: fullData.telefone,
         conheceInstagram: fullData.comoNosConheceu === 'Instagram' ? 'Yes' : 'No', // Simplified for schema
