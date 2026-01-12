@@ -29,14 +29,14 @@ service cloud.firestore {
       // LIST: Listing all claimed prizes is disallowed for security and privacy.
       allow list: if false;
 
-      // CREATE: A user can claim a prize (create a document) ONLY IF:
+      // WRITE: A user can claim a prize (create or overwrite a document) ONLY IF:
       // 1. They are signed in.
       // 2. A document with this phone number ID does not already exist.
       // This is the core security rule to prevent duplicate prize claims.
-      allow create: if isSignedIn() && !exists(path);
+      allow write: if isSignedIn() && !exists(path);
 
-      // UPDATE & DELETE: Once a prize is claimed, it cannot be changed or deleted by any client.
-      allow update, delete: if false;
+      // DELETE: Once a prize is claimed, it cannot be deleted by any client.
+      allow delete: if false;
     }
   }
 }
