@@ -35,17 +35,25 @@ export default function StepFour({ formData }: { formData: FormData }) {
       }
       
       const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
-      const docSnap: DocumentSnapshot = await getDoc(prizeClaimRef);
-      
-      if (docSnap.exists()) {
-        const prizeData = docSnap.data();
-        if (prizeData.prize) {
-          setClaimedPrize(prizeData.prize);
+      try {
+        const docSnap: DocumentSnapshot = await getDoc(prizeClaimRef);
+        
+        if (docSnap.exists()) {
+          const prizeData = docSnap.data();
+          if (prizeData.prize) {
+            setClaimedPrize(prizeData.prize);
+          }
+          setStepState('claimed');
+          setShowPrize(true); // Se já resgatou, mostra a tela de prêmio diretamente
+          return;
         }
-        setStepState('claimed');
-        setShowPrize(true); // Se já resgatou, mostra a tela de prêmio diretamente
+      } catch (error) {
+        console.error("Error checking prize claim:", error);
+        // Fallback to initial state if there's an error
+        setStepState('initial');
         return;
       }
+
 
       const reviewTimeKey = `reviewButtonClickedTime_${formData.telefone}`;
       const reviewTime = localStorage.getItem(reviewTimeKey);
@@ -102,16 +110,10 @@ export default function StepFour({ formData }: { formData: FormData }) {
             uid: user.uid 
           };
           setDocumentNonBlocking(prizeClaimRef, prizeData, {});
-          toast({
-            title: 'Obrigado pela sua avaliação!',
-            description: 'Sua roleta de prêmios foi desbloqueada! 🔥',
-          });
         }
         setShowPrize(true);
         setStepState('claimed');
       }).catch(err => {
-        // Mesmo se houver um erro, mostramos a tela do prêmio para não bloquear o usuário.
-        // O erro será capturado pelo manipulador global.
         console.error("Erro ao verificar ou reivindicar o prêmio:", err);
         setShowPrize(true);
         setStepState('claimed');
@@ -122,8 +124,14 @@ export default function StepFour({ formData }: { formData: FormData }) {
   const handlePrizeWon = (prize: string) => {
     setClaimedPrize(prize);
     if (!firestore || !prizeDocId || !user) return;
+
+    // Update the prize_claims collection
     const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
     updateDocumentNonBlocking(prizeClaimRef, { prize: prize });
+
+    // Also update the survey_responses collection
+    const surveyResponseRef = doc(firestore, 'survey_responses', prizeDocId);
+    updateDocumentNonBlocking(surveyResponseRef, { premioGanho: prize });
   };
   
   const getButton = () => {

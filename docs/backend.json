@@ -46,6 +46,10 @@
           "type": "string",
           "description": "Timestamp indicating when the survey response was created.",
           "format": "date-time"
+        },
+        "premioGanho": {
+          "type": "string",
+          "description": "The prize won by the user after completing the survey."
         }
       },
       "required": [
