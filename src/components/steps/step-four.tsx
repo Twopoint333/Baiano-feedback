@@ -7,8 +7,8 @@ import { PartyPopper, Timer, Gift, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Roulette } from '@/components/roulette';
 import type { FormData } from '@/app/page';
-import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { useFirebase, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 const GOOGLE_REVIEW_LINK = 'https://maps.app.goo.gl/Z9txxdfoj3puf7V49?g_st=ic';
 const MIN_REVIEW_TIME_S = 30; // 30 segundos
@@ -89,23 +89,19 @@ export default function StepFour({ formData }: { formData: FormData }) {
   const handleReadyClick = () => {
     if (!prizeClaimRef) return;
 
-    startTransition(async () => {
-      try {
-        // Attempt to claim the prize. Firestore rules will prevent duplicates.
-        await setDoc(prizeClaimRef, { claimedAt: new Date() });
-        setShowPrize(true);
-        toast({
-          title: 'Obrigado pela sua avaliação!',
-          description: 'Sua roleta de prêmios foi desbloqueada! 🔥',
-        });
-      } catch (error) {
-        console.error("Error claiming prize:", error);
-        toast({
-            variant: "destructive",
-            title: "Ops! Algo deu errado.",
-            description: "Não foi possível liberar seu prêmio. Por favor, tente novamente ou fale com nossa equipe.",
-        });
-      }
+    startTransition(() => {
+      // Attempt to claim the prize. Firestore rules will prevent duplicates.
+      // This is non-blocking and will use the global error handler on failure.
+      setDocumentNonBlocking(prizeClaimRef, { claimedAt: new Date() }, {});
+      
+      // We proceed assuming success due to optimistic UI update.
+      // The security rule is the source of truth. If this fails, the error handler will catch it.
+      // A local state check for `prizeClaim` will eventually sync.
+      setShowPrize(true);
+      toast({
+        title: 'Obrigado pela sua avaliação!',
+        description: 'Sua roleta de prêmios foi desbloqueada! 🔥',
+      });
     });
   };
   
@@ -162,7 +158,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
                 </CardContent>
              </Card>
              <p className="text-lg text-foreground/80 leading-relaxed">
-               Mostre a tela para nossa equipe no caixa para validar e retirar seu prêmio! 🔥
+               Mostre esta tela para nossa equipe no caixa para validar e retirar seu prêmio! 🔥
              </p>
         </div>
     );
