@@ -28,26 +28,23 @@ export default function StepFour({ formData }: { formData: FormData }) {
     return doc(firestore, 'prize_claims', prizeDocId);
   }, [firestore, prizeDocId]);
   
-  // Real-time check if prize has been claimed
+  // This hook is now for optimistic UI update, the main check is in StepOne
   const { data: prizeClaim, isLoading: isClaimLoading } = useDoc(prizeClaimRef);
 
   const [showPrize, setShowPrize] = useState(false);
-  const [stepState, setStepState] = useState<StepState>('loading');
+  const [stepState, setStepState] = useState<StepState>('initial'); // Start at initial
   const [secondsRemaining, setSecondsRemaining] = useState(MIN_REVIEW_TIME_S);
-
+  
   useEffect(() => {
-    if (isClaimLoading) {
-      setStepState('loading');
-      return;
-    }
-  
+    // If prize is already claimed (e.g., from another device)
+    // this will update the UI to the claimed state.
     if (prizeClaim) {
-      setStepState('claimed');
-      setShowPrize(true);
-      return;
+        setStepState('claimed');
+        setShowPrize(true);
+        return;
     }
-  
-    // If prize is not claimed, check local timer state
+
+    // Timer logic remains the same, based on localStorage
     const reviewTimeKey = `reviewButtonClickedTime_${formData.telefone}`;
     const reviewTime = localStorage.getItem(reviewTimeKey);
     if (reviewTime) {
@@ -61,8 +58,8 @@ export default function StepFour({ formData }: { formData: FormData }) {
     } else {
       setStepState('initial');
     }
-  }, [prizeClaim, isClaimLoading, formData.telefone]);
-  
+  }, [prizeClaim, formData.telefone]);
+
 
   useEffect(() => {
     if (stepState !== 'counting') return;
@@ -92,7 +89,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
     startTransition(() => {
       // Attempt to claim the prize. Firestore rules will prevent duplicates.
       // This is non-blocking and will use the global error handler on failure.
-      setDocumentNonBlocking(prizeClaimRef, { claimedAt: new Date() }, {});
+      setDocumentNonBlocking(prizeClaimRef, { claimedAt: new Date() }, { merge: false });
       
       // We proceed assuming success due to optimistic UI update.
       // The security rule is the source of truth. If this fails, the error handler will catch it.
@@ -107,7 +104,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
   
   const getButton = () => {
     switch (stepState) {
-        case 'loading':
+        case 'loading': // This case is less likely to be hit now
             return (
                 <Button variant="secondary" disabled className="w-full font-bold text-base py-6">
                     <Loader2 className="mr-2 animate-spin" />

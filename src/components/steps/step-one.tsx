@@ -4,6 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { FormData } from '@/app/page';
+import React, { useState } from 'react';
+import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,7 +20,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import React from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface StepOneProps {
   nextStep: () => void;
@@ -38,6 +42,10 @@ const FormSchema = z.object({
 });
 
 export default function StepOne({ nextStep, updateFormData, formData }: StepOneProps) {
+  const [prizeClaimed, setPrizeClaimed] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const { firestore } = useFirebase();
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -59,12 +67,42 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
       }
     }
     form.setValue('telefone', formatted);
+    if (prizeClaimed) {
+      setPrizeClaimed(false); // Reset on change
+    }
   };
 
-
-  function onSubmit(data: z.infer<typeof FormSchema>) {
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
+    setChecking(true);
     updateFormData(data);
-    nextStep();
+
+    if (!firestore) {
+      console.error("Firestore not available");
+      setChecking(false);
+      return;
+    }
+
+    const prizeDocId = data.telefone.replace(/\D/g, '');
+    const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
+    
+    // We need to use getDoc for a one-time check on submit
+    const { getDoc } = await import('firebase/firestore');
+    
+    try {
+      const docSnap = await getDoc(prizeClaimRef);
+      if (docSnap.exists()) {
+        setPrizeClaimed(true);
+      } else {
+        setPrizeClaimed(false);
+        nextStep();
+      }
+    } catch (error) {
+      console.error("Error checking prize claim:", error);
+      // Decide how to handle error, maybe let user proceed?
+      nextStep();
+    } finally {
+      setChecking(false);
+    }
   }
 
   return (
@@ -83,7 +121,7 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
                 <FormItem className="text-left">
                   <FormLabel>Nome</FormLabel>
                   <FormControl>
-                    <Input placeholder="Digite seu nome" {...field} />
+                    <Input placeholder="Digite seu nome" {...field} disabled={prizeClaimed} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -101,15 +139,28 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
                       {...field}
                       onChange={handlePhoneChange}
                       maxLength={15}
+                      disabled={prizeClaimed}
                      />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full font-bold text-base py-6">
-              Continuar
-            </Button>
+
+            {prizeClaimed ? (
+              <Alert variant="default" className="bg-amber-100 border-amber-300 text-amber-900">
+                <AlertTitle className="font-bold">Opa, {form.getValues('nome')}!</AlertTitle>
+                <AlertDescription>
+                  Parece que você já participou. Que tal guardarmos para uma próxima? Agradecemos seu feedback!
+                </AlertDescription>
+              </Alert>
+            ) : (
+               <Button type="submit" className="w-full font-bold text-base py-6" disabled={checking}>
+                {checking ? <Loader2 className="animate-spin mr-2"/> : null}
+                {checking ? 'Verificando...' : 'Continuar'}
+              </Button>
+            )}
+
             <p className="text-xs text-muted-foreground pt-2">
               Seus dados são usados apenas para controle da pesquisa e entrega do prêmio.
             </p>
