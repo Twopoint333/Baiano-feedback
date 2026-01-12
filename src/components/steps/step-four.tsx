@@ -1,33 +1,49 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PartyPopper, Timer, Gift, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Roulette } from '@/components/roulette';
 import type { FormData } from '@/app/page';
+import { useFirebase, useDoc } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 const GOOGLE_REVIEW_LINK = 'https://maps.app.goo.gl/Z9txxdfoj3puf7V49?g_st=ic';
 const MIN_REVIEW_TIME_S = 30; // 30 segundos
 
-type StepState = 'initial' | 'counting' | 'ready';
+type StepState = 'initial' | 'counting' | 'ready' | 'loading' | 'claimed';
 
 export default function StepFour({ formData }: { formData: FormData }) {
-  const [showPrize, setShowPrize] = useState(false);
-  const [stepState, setStepState] = useState<StepState>('initial');
-  const [secondsRemaining, setSecondsRemaining] = useState(MIN_REVIEW_TIME_S);
+  const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const { firestore } = useFirebase();
+
+  // Sanitize phone number to use as a document ID
+  const prizeDocId = formData.telefone.replace(/\D/g, '');
+  const prizeClaimRef = prizeDocId ? doc(firestore, 'prize_claims', prizeDocId) : null;
+  
+  // Real-time check if prize has been claimed
+  const { data: prizeClaim, isLoading: isClaimLoading } = useDoc(prizeClaimRef);
+
+  const [showPrize, setShowPrize] = useState(false);
+  const [stepState, setStepState] = useState<StepState>('loading');
+  const [secondsRemaining, setSecondsRemaining] = useState(MIN_REVIEW_TIME_S);
 
   useEffect(() => {
-    // Use phone number to check if prize was unlocked to make it unique per user
-    const prizeUnlockedKey = `prizeUnlocked_${formData.telefone}`;
-    const prizeUnlocked = localStorage.getItem(prizeUnlockedKey);
-    if (prizeUnlocked === 'true') {
+    if (isClaimLoading) {
+      setStepState('loading');
+      return;
+    }
+  
+    if (prizeClaim) {
+      setStepState('claimed');
       setShowPrize(true);
       return;
     }
-
+  
+    // If prize is not claimed, check local timer state
     const reviewTimeKey = `reviewButtonClickedTime_${formData.telefone}`;
     const reviewTime = localStorage.getItem(reviewTimeKey);
     if (reviewTime) {
@@ -38,8 +54,11 @@ export default function StepFour({ formData }: { formData: FormData }) {
         setStepState('counting');
         setSecondsRemaining(Math.ceil(MIN_REVIEW_TIME_S - timeElapsed));
       }
+    } else {
+      setStepState('initial');
     }
-  }, [formData.telefone]);
+  }, [prizeClaim, isClaimLoading, formData.telefone]);
+  
 
   useEffect(() => {
     if (stepState !== 'counting') return;
@@ -64,18 +83,37 @@ export default function StepFour({ formData }: { formData: FormData }) {
   };
 
   const handleReadyClick = () => {
-    // Here we'd typically check Firestore. For now, we use localStorage.
-    const prizeUnlockedKey = `prizeUnlocked_${formData.telefone}`;
-    localStorage.setItem(prizeUnlockedKey, 'true');
-    setShowPrize(true);
-    toast({
-      title: 'Obrigado pela sua avaliação!',
-      description: 'Sua roleta de prêmios foi desbloqueada! 🔥',
+    if (!prizeClaimRef) return;
+
+    startTransition(async () => {
+      try {
+        // Attempt to claim the prize. Firestore rules will prevent duplicates.
+        await setDoc(prizeClaimRef, { claimedAt: new Date() });
+        setShowPrize(true);
+        toast({
+          title: 'Obrigado pela sua avaliação!',
+          description: 'Sua roleta de prêmios foi desbloqueada! 🔥',
+        });
+      } catch (error) {
+        console.error("Error claiming prize:", error);
+        toast({
+            variant: "destructive",
+            title: "Ops! Algo deu errado.",
+            description: "Não foi possível liberar seu prêmio. Por favor, tente novamente ou fale com nossa equipe.",
+        });
+      }
     });
   };
   
   const getButton = () => {
     switch (stepState) {
+        case 'loading':
+            return (
+                <Button variant="secondary" disabled className="w-full font-bold text-base py-6">
+                    <Loader2 className="mr-2 animate-spin" />
+                    Verificando...
+                </Button>
+            );
         case 'initial':
             return (
                 <Button onClick={handleInitialClick} className="w-full font-bold text-base py-6">
@@ -92,11 +130,17 @@ export default function StepFour({ formData }: { formData: FormData }) {
             );
         case 'ready':
             return (
-                <Button onClick={handleReadyClick} className="w-full font-bold text-base py-6 animate-pulse">
-                    <PartyPopper className="mr-2"/>
+                <Button onClick={handleReadyClick} disabled={isPending} className="w-full font-bold text-base py-6 animate-pulse">
+                    {isPending ? <Loader2 className="mr-2 animate-spin" /> : <PartyPopper className="mr-2"/>}
                     Liberar minha roleta!
                 </Button>
-            )
+            );
+        case 'claimed':
+             return (
+                <Button variant="secondary" disabled className="w-full font-bold text-base py-6">
+                    Prêmio já resgatado
+                </Button>
+            );
     }
   }
 
