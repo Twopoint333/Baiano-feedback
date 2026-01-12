@@ -90,7 +90,9 @@ export default function StepFour({ formData }: { formData: FormData }) {
 
     startTransition(() => {
       // The security rule is the source of truth, but we optimistically update UI.
-      setDocumentNonBlocking(prizeClaimRef, { claimedAt: new Date() }, { merge: false });
+      // We call setDoc without merge options to ensure it's a "create" operation.
+      // The security rule `!exists(path)` will allow this for new claims.
+      setDocumentNonBlocking(prizeClaimRef, { claimedAt: new Date() }, {});
       
       setStepState('claimed');
       setShowPrize(true);
