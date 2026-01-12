@@ -30,7 +30,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
   useEffect(() => {
     async function checkInitialState() {
       if (!firestore || !prizeDocId) {
-        setStepState('initial'); // Fallback if firestore is not ready
+        setStepState('initial'); // Fallback se firestore não estiver pronto
         return;
       }
       
@@ -39,11 +39,11 @@ export default function StepFour({ formData }: { formData: FormData }) {
       
       if (docSnap.exists()) {
         const prizeData = docSnap.data();
-        setStepState('claimed');
-        setShowPrize(true); // If already claimed, show the prize screen directly
-        if(prizeData.prize) {
-            setClaimedPrize(prizeData.prize);
+        if (prizeData.prize) {
+          setClaimedPrize(prizeData.prize);
         }
+        setStepState('claimed');
+        setShowPrize(true); // Se já resgatou, mostra a tela de prêmio diretamente
         return;
       }
 
@@ -66,7 +66,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
   }, [firestore, prizeDocId, formData.telefone]);
 
 
-  // This effect manages the countdown timer.
+  // Este efeito gerencia o contador regressivo.
   useEffect(() => {
     if (stepState !== 'counting') return;
 
@@ -107,14 +107,14 @@ export default function StepFour({ formData }: { formData: FormData }) {
             description: 'Sua roleta de prêmios foi desbloqueada! 🔥',
           });
         }
-        setStepState('claimed');
         setShowPrize(true);
+        setStepState('claimed');
       }).catch(err => {
-        // Even if there's an error, we show the prize screen to not block the user.
-        // The error will be caught by the global handler.
-        console.error("Error checking or claiming prize:", err);
-        setStepState('claimed');
+        // Mesmo se houver um erro, mostramos a tela do prêmio para não bloquear o usuário.
+        // O erro será capturado pelo manipulador global.
+        console.error("Erro ao verificar ou reivindicar o prêmio:", err);
         setShowPrize(true);
+        setStepState('claimed');
       });
     });
   };
@@ -157,7 +157,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
                 </Button>
             );
         case 'claimed':
-             return null; // Don't show any button if prize is claimed and we are showing the roulette.
+             return null; // Não mostra nenhum botão se o prêmio foi reivindicado e estamos mostrando a roleta.
     }
   }
 
