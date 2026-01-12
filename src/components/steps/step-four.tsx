@@ -84,21 +84,31 @@ export default function StepFour({ formData }: { formData: FormData }) {
   };
 
   const handleReadyClick = () => {
-    if (!firestore || !prizeDocId) return;
-
-    const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
+    if (!firestore || !prizeDocId || isPending) return;
 
     startTransition(() => {
-      // The security rule is the source of truth, but we optimistically update UI.
-      // We call setDoc without merge options to ensure it's a "create" operation.
-      // The security rule `!exists(path)` will allow this for new claims.
-      setDocumentNonBlocking(prizeClaimRef, { claimedAt: new Date() }, {});
+      const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
       
-      setStepState('claimed');
-      setShowPrize(true);
-      toast({
-        title: 'Obrigado pela sua avaliação!',
-        description: 'Sua roleta de prêmios foi desbloqueada! 🔥',
+      // Explicitly check if doc exists before writing to align with security rules
+      getDoc(prizeClaimRef).then(docSnap => {
+        if (!docSnap.exists()) {
+          // Document does not exist, so we can create it.
+          setDocumentNonBlocking(prizeClaimRef, { claimedAt: new Date() }, {});
+           toast({
+             title: 'Obrigado pela sua avaliação!',
+             description: 'Sua roleta de prêmios foi desbloqueada! 🔥',
+           });
+        }
+        // Whether it existed or not, we update the UI to the final state.
+        // If it already existed (e.g., due to a double click), this prevents a second write attempt.
+        setStepState('claimed');
+        setShowPrize(true);
+      }).catch(err => {
+        console.error("Error checking prize claim:", err);
+        // Fallback: still show the prize to not punish the user for a backend error.
+        // The security rule is the ultimate source of truth.
+        setStepState('claimed');
+        setShowPrize(true);
       });
     });
   };
@@ -144,7 +154,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
         <div className="w-full space-y-6 animate-in fade-in-50 duration-500 text-center">
              <h1 className="font-headline text-3xl font-bold">Roleta Premiada! 🎡</h1>
              <p className="text-foreground/80 text-lg">
-                {stepState === 'claimed' ? 'Seu prêmio já foi resgatado!' : 'Gire a roleta para descobrir seu prêmio.'}
+                Gire a roleta para descobrir seu prêmio ou veja o prêmio que você já ganhou!
              </p>
              <Card>
                 <CardContent className="p-6">
