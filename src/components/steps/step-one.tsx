@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import type { FormData } from '@/app/page';
 import React, { useState } from 'react';
-import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
@@ -94,11 +94,12 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
         setPrizeClaimed(true);
       } else {
         setPrizeClaimed(false);
-        nextStep();
+        nextStep(); // Only proceed if the prize has not been claimed
       }
     } catch (error) {
       console.error("Error checking prize claim:", error);
-      // Decide how to handle error, maybe let user proceed?
+      // Let's be safe and let the user proceed if there's a check error.
+      // The backend rules will still prevent a duplicate claim.
       nextStep();
     } finally {
       setChecking(false);
