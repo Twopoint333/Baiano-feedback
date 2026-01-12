@@ -28,7 +28,7 @@ interface StepOneProps {
   formData: Partial<FormData>;
 }
 
-const phoneRegex = /^\(?\d{2}\)?\s?9?\d{4}-?\d{4}$/;
+const phoneRegex = /^\(?\d{2}\)?\s?9?\d{4,5}-?\d{4}$/;
 
 
 const FormSchema = z.object({
@@ -59,11 +59,13 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
     if (input.length > 0) {
       formatted = `(${input.substring(0, 2)}`;
     }
-    if (input.length > 2) {
+    if (input.length > 2 && input.length <= 6) {
       formatted += `) ${input.substring(2, 7)}`;
     }
     if (input.length > 7) {
-      formatted += `-${input.substring(7, 11)}`;
+      formatted += `) ${input.substring(2, 7)}-${input.substring(7, 11)}`;
+    } else if (input.length > 2) {
+      formatted += `) ${input.substring(2)}`;
     }
     form.setValue('telefone', formatted);
     if (prizeClaimed) {
@@ -104,6 +106,7 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
       updateFormData(data);
       nextStep();
     } finally {
+        // This will run regardless, but nextStep() is only called if the user is new.
         setChecking(false);
     }
   }
