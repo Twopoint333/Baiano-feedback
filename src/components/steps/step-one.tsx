@@ -29,7 +29,7 @@ interface StepOneProps {
 }
 
 const phoneRegex = new RegExp(
-  /^\(?([0-9]{2})\)?(\s|-)?(9[0-9]{4})-?([0-9]{4})$/
+  /^\\(?([0-9]{2})\\)?(\\s|-)?(9[0-9]{4})-?([0-9]{4})$/
 );
 
 const FormSchema = z.object({
@@ -75,7 +75,6 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setChecking(true);
     setPrizeClaimed(false);
-    updateFormData(data);
 
     if (!firestore) {
       console.error("Firestore not available");
@@ -96,15 +95,24 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
       }
       
       // Only proceed if doc does not exist
+      updateFormData(data);
       nextStep();
 
     } catch (error) {
       console.error("Error checking prize claim:", error);
       // Let's be safe and let the user proceed if there's a check error.
       // The backend rules will still prevent a duplicate claim.
+      updateFormData(data);
       nextStep();
     } finally {
+      // For the success case (doc doesn't exist), we don't need to setChecking(false)
+      // because the component will unmount. For the error cases and the
+      // prizeClaimed case, it's handled inside the blocks.
+      if (!docSnap.exists()) {
+        // This branch is only taken if the document does not exist
+      } else {
         setChecking(false);
+      }
     }
   }
 
