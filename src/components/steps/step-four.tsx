@@ -110,6 +110,8 @@ export default function StepFour({ formData }: { formData: FormData }) {
         setStepState('claimed');
         setShowPrize(true);
       }).catch(err => {
+        // Even if there's an error, we show the prize screen to not block the user.
+        // The error will be caught by the global handler.
         console.error("Error checking or claiming prize:", err);
         setStepState('claimed');
         setShowPrize(true);
@@ -118,6 +120,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
   };
 
   const handlePrizeWon = (prize: string) => {
+    setClaimedPrize(prize);
     if (!firestore || !prizeDocId || !user) return;
     const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
     updateDocumentNonBlocking(prizeClaimRef, { prize: prize });
