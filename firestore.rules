@@ -28,10 +28,11 @@ service cloud.firestore {
         allow get: if isSignedIn();
 
         // A user can create a prize claim document only if they are the owner of the claim.
-        // The document ID must match their phone number.
+        // The `uid` being written must match the authenticated user's `uid`.
         allow create: if request.auth.uid == request.resource.data.uid;
 
         // A user can update their own prize claim document.
+        // The `uid` in the existing document must match the authenticated user's `uid`.
         allow update: if request.auth.uid == resource.data.uid;
         
         // No one can delete a prize claim.
