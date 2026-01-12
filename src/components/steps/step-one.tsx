@@ -30,7 +30,6 @@ interface StepOneProps {
 
 const phoneRegex = /^\(?\d{2}\)?\s?9?\d{4,5}-?\d{4}$/;
 
-
 const FormSchema = z.object({
   nome: z.string().min(2, {
     message: 'O nome deve ter pelo menos 2 caracteres.',
@@ -41,7 +40,7 @@ const FormSchema = z.object({
 });
 
 export default function StepOne({ nextStep, updateFormData, formData }: StepOneProps) {
-  const [prizeClaimed, setPrizeClaimed] = useState(false);
+  const [hasAlreadyParticipated, setHasAlreadyParticipated] = useState(false);
   const [checking, setChecking] = useState(false);
   const { firestore } = useFirebase();
 
@@ -68,45 +67,46 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
       formatted += `) ${input.substring(2)}`;
     }
     form.setValue('telefone', formatted);
-    if (prizeClaimed) {
-      setPrizeClaimed(false); // Reset on change
+    if (hasAlreadyParticipated) {
+      setHasAlreadyParticipated(false); // Reset on change
     }
   };
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setChecking(true);
-    setPrizeClaimed(false);
+    setHasAlreadyParticipated(false);
 
     if (!firestore) {
       console.error("Firestore not available");
       setChecking(false);
       return;
     }
-
-    const prizeDocId = data.telefone.replace(/\D/g, '');
-    const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
+    
+    // Use the sanitized phone number as the document ID to check for an existing survey response
+    const surveyDocId = data.telefone.replace(/\D/g, '');
+    const surveyResponseRef = doc(firestore, 'survey_responses', surveyDocId);
     
     try {
-      const docSnap = await getDoc(prizeClaimRef);
+      const docSnap = await getDoc(surveyResponseRef);
       
       if (docSnap.exists()) {
-        setPrizeClaimed(true);
+        // If the document exists, the user has already participated.
+        setHasAlreadyParticipated(true);
         setChecking(false);
-        return; // STOP EXECUTION HERE
+        return; // Stop the execution here.
       }
       
-      // Only proceed if doc does not exist
+      // Only proceed if the document does not exist.
       updateFormData(data);
       nextStep();
 
     } catch (error) {
-      console.error("Error checking prize claim:", error);
-      // Let's be safe and let the user proceed if there's a check error.
-      // The backend rules will still prevent a duplicate claim.
+      console.error("Error checking for existing survey response:", error);
+      // To be safe, let the user proceed if there's a check error.
+      // The `setDoc` in step three will handle overwriting, but this is a fallback.
       updateFormData(data);
       nextStep();
     } finally {
-        // This will run regardless, but nextStep() is only called if the user is new.
         setChecking(false);
     }
   }
@@ -127,7 +127,7 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
                 <FormItem className="text-left">
                   <FormLabel>Nome</FormLabel>
                   <FormControl>
-                    <Input placeholder="Digite seu nome" {...field} disabled={prizeClaimed} />
+                    <Input placeholder="Digite seu nome" {...field} disabled={hasAlreadyParticipated} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -145,7 +145,7 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
                       {...field}
                       onChange={handlePhoneChange}
                       maxLength={15}
-                      disabled={prizeClaimed}
+                      disabled={hasAlreadyParticipated}
                      />
                   </FormControl>
                   <FormMessage />
@@ -153,7 +153,7 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
               )}
             />
 
-            {prizeClaimed ? (
+            {hasAlreadyParticipated ? (
               <Alert variant="default" className="bg-amber-100 border-amber-300 text-amber-900">
                 <AlertTitle className="font-bold">Opa, {form.getValues('nome')}!</AlertTitle>
                 <AlertDescription>
