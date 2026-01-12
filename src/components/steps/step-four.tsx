@@ -3,17 +3,17 @@
 import { useState, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PartyPopper, Timer, Gift, Loader2 } from 'lucide-react';
+import { PartyPopper, Timer, Gift, Loader2, RotateCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Roulette } from '@/components/roulette';
 import type { FormData } from '@/app/page';
-import { useFirebase, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useFirebase, setDocumentNonBlocking } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const GOOGLE_REVIEW_LINK = 'https://maps.app.goo.gl/Z9txxdfoj3puf7V49?g_st=ic';
 const MIN_REVIEW_TIME_S = 30; // 30 segundos
 
-type StepState = 'initial' | 'counting' | 'ready' | 'claimed';
+type StepState = 'initial' | 'counting' | 'ready' | 'claimed' | 'checking';
 
 export default function StepFour({ formData }: { formData: FormData }) {
   const [isPending, startTransition] = useTransition();
@@ -21,26 +21,44 @@ export default function StepFour({ formData }: { formData: FormData }) {
   const { firestore } = useFirebase();
 
   const [showPrize, setShowPrize] = useState(false);
-  const [stepState, setStepState] = useState<StepState>('initial');
+  const [stepState, setStepState] = useState<StepState>('checking');
   const [secondsRemaining, setSecondsRemaining] = useState(MIN_REVIEW_TIME_S);
 
-  // This effect handles the timer logic based on localStorage.
+  const prizeDocId = formData.telefone.replace(/\D/g, '');
+
   useEffect(() => {
-    const reviewTimeKey = `reviewButtonClickedTime_${formData.telefone}`;
-    const reviewTime = localStorage.getItem(reviewTimeKey);
-    
-    if (reviewTime) {
-      const timeElapsed = (Date.now() - Number(reviewTime)) / 1000;
-      if (timeElapsed >= MIN_REVIEW_TIME_S) {
-        setStepState('ready');
-      } else {
-        setStepState('counting');
-        setSecondsRemaining(Math.ceil(MIN_REVIEW_TIME_S - timeElapsed));
+    async function checkInitialState() {
+      if (!firestore || !prizeDocId) {
+        setStepState('initial'); // Fallback if firestore is not ready
+        return;
       }
-    } else {
-      setStepState('initial');
+      
+      const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
+      const docSnap = await getDoc(prizeClaimRef);
+      if (docSnap.exists()) {
+        setStepState('claimed');
+        setShowPrize(true); // If already claimed, show the prize screen directly
+        return;
+      }
+
+      const reviewTimeKey = `reviewButtonClickedTime_${formData.telefone}`;
+      const reviewTime = localStorage.getItem(reviewTimeKey);
+      
+      if (reviewTime) {
+        const timeElapsed = (Date.now() - Number(reviewTime)) / 1000;
+        if (timeElapsed >= MIN_REVIEW_TIME_S) {
+          setStepState('ready');
+        } else {
+          setStepState('counting');
+          setSecondsRemaining(Math.ceil(MIN_REVIEW_TIME_S - timeElapsed));
+        }
+      } else {
+        setStepState('initial');
+      }
     }
-  }, [formData.telefone]);
+    checkInitialState();
+  }, [firestore, prizeDocId, formData.telefone]);
+
 
   // This effect manages the countdown timer.
   useEffect(() => {
@@ -66,17 +84,14 @@ export default function StepFour({ formData }: { formData: FormData }) {
   };
 
   const handleReadyClick = () => {
-    // Sanitize phone number to use as a document ID
-    const prizeDocId = formData.telefone.replace(/\D/g, '');
     if (!firestore || !prizeDocId) return;
 
     const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
 
     startTransition(() => {
-      // Attempt to claim the prize. Firestore rules will prevent duplicates.
+      // The security rule is the source of truth, but we optimistically update UI.
       setDocumentNonBlocking(prizeClaimRef, { claimedAt: new Date() }, { merge: false });
       
-      // Optimistically update the UI. The security rule is the source of truth.
       setStepState('claimed');
       setShowPrize(true);
       toast({
@@ -88,6 +103,13 @@ export default function StepFour({ formData }: { formData: FormData }) {
   
   const getButton = () => {
     switch (stepState) {
+        case 'checking':
+            return (
+                <Button variant="secondary" disabled className="w-full font-bold text-base py-6">
+                    <RotateCw className="mr-2 animate-spin" />
+                    Verificando...
+                </Button>
+            );
         case 'initial':
             return (
                 <Button onClick={handleInitialClick} className="w-full font-bold text-base py-6">
@@ -110,11 +132,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
                 </Button>
             );
         case 'claimed':
-             return (
-                <Button variant="secondary" disabled className="w-full font-bold text-base py-6">
-                    Prêmio já resgatado
-                </Button>
-            );
+             return null; // Don't show any button if prize is claimed and we are showing the roulette.
     }
   }
 
@@ -124,7 +142,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
         <div className="w-full space-y-6 animate-in fade-in-50 duration-500 text-center">
              <h1 className="font-headline text-3xl font-bold">Roleta Premiada! 🎡</h1>
              <p className="text-foreground/80 text-lg">
-                Gire a roleta para descobrir seu prêmio.
+                {stepState === 'claimed' ? 'Seu prêmio já foi resgatado!' : 'Gire a roleta para descobrir seu prêmio.'}
              </p>
              <Card>
                 <CardContent className="p-6">
