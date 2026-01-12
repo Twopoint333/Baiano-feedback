@@ -7,13 +7,13 @@ import { PartyPopper, Timer, Gift, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Roulette } from '@/components/roulette';
 import type { FormData } from '@/app/page';
-import { useFirebase, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
+import { useFirebase, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 const GOOGLE_REVIEW_LINK = 'https://maps.app.goo.gl/Z9txxdfoj3puf7V49?g_st=ic';
 const MIN_REVIEW_TIME_S = 30; // 30 segundos
 
-type StepState = 'initial' | 'counting' | 'ready' | 'loading' | 'claimed';
+type StepState = 'initial' | 'counting' | 'ready' | 'claimed';
 
 export default function StepFour({ formData }: { formData: FormData }) {
   const [isPending, startTransition] = useTransition();
@@ -27,26 +27,17 @@ export default function StepFour({ formData }: { formData: FormData }) {
     if (!firestore || !prizeDocId) return null;
     return doc(firestore, 'prize_claims', prizeDocId);
   }, [firestore, prizeDocId]);
-  
-  // This hook is now for optimistic UI update, the main check is in StepOne
-  const { data: prizeClaim, isLoading: isClaimLoading } = useDoc(prizeClaimRef);
 
   const [showPrize, setShowPrize] = useState(false);
-  const [stepState, setStepState] = useState<StepState>('initial'); // Start at initial
+  const [stepState, setStepState] = useState<StepState>('initial');
   const [secondsRemaining, setSecondsRemaining] = useState(MIN_REVIEW_TIME_S);
-  
-  useEffect(() => {
-    // If prize is already claimed (e.g., from another device)
-    // this will update the UI to the claimed state.
-    if (prizeClaim) {
-        setStepState('claimed');
-        setShowPrize(true);
-        return;
-    }
 
-    // Timer logic remains the same, based on localStorage
+  // This effect handles the timer logic based on localStorage.
+  // It is the main driver for the UI state before the prize is claimed.
+  useEffect(() => {
     const reviewTimeKey = `reviewButtonClickedTime_${formData.telefone}`;
     const reviewTime = localStorage.getItem(reviewTimeKey);
+    
     if (reviewTime) {
       const timeElapsed = (Date.now() - Number(reviewTime)) / 1000;
       if (timeElapsed >= MIN_REVIEW_TIME_S) {
@@ -58,9 +49,9 @@ export default function StepFour({ formData }: { formData: FormData }) {
     } else {
       setStepState('initial');
     }
-  }, [prizeClaim, formData.telefone]);
+  }, [formData.telefone]);
 
-
+  // This effect manages the countdown timer.
   useEffect(() => {
     if (stepState !== 'counting') return;
 
@@ -91,9 +82,11 @@ export default function StepFour({ formData }: { formData: FormData }) {
       // This is non-blocking and will use the global error handler on failure.
       setDocumentNonBlocking(prizeClaimRef, { claimedAt: new Date() }, { merge: false });
       
-      // We proceed assuming success due to optimistic UI update.
-      // The security rule is the source of truth. If this fails, the error handler will catch it.
-      // A local state check for `prizeClaim` will eventually sync.
+      // We proceed with an optimistic UI update. The security rule is the ultimate source of truth.
+      // If the write fails because the document exists, the global error handler will catch it,
+      // but the UI will still show the prize screen. This is acceptable since StepOne
+      // should have already prevented this user from getting here.
+      setStepState('claimed');
       setShowPrize(true);
       toast({
         title: 'Obrigado pela sua avaliação!',
@@ -104,13 +97,6 @@ export default function StepFour({ formData }: { formData: FormData }) {
   
   const getButton = () => {
     switch (stepState) {
-        case 'loading': // This case is less likely to be hit now
-            return (
-                <Button variant="secondary" disabled className="w-full font-bold text-base py-6">
-                    <Loader2 className="mr-2 animate-spin" />
-                    Verificando...
-                </Button>
-            );
         case 'initial':
             return (
                 <Button onClick={handleInitialClick} className="w-full font-bold text-base py-6">
