@@ -1,0 +1,75 @@
+/**
+ * This ruleset governs access to the Baiano Burger satisfaction survey data.
+ *
+ * Core Philosophy:
+ * The security model is designed for a public-facing survey. It operates on a
+ * "write-once, read-many" principle. Anyone, including anonymous users, who is
+ * signed into the application can submit a survey response. Once a response is
+ * created, it becomes publicly readable by anyone but cannot be changed or
+ * deleted by any client-side user. This ensures the integrity of the submitted
+ * data.
+ *
+ * Data Structure:
+ * All data is stored in a single top-level collection named `survey_responses`.
+ * Each document in this collection represents a single, complete survey
+ * submission. There are no subcollections or user-specific data trees.
+ *
+ * Key Security Decisions:
+ * - Public Read Access: All submitted survey responses are publicly readable
+ *   to facilitate data analysis or display, as per the application requirements.
+ * - Authenticated Creation: To provide a basic layer of spam prevention, only
+ *   authenticated users (including anonymous ones) can create new survey
+ *   responses. Unauthenticated requests are denied.
+ * - Immutability: Update and delete operations are explicitly disallowed for all
+ *   client-side users. This protects the collected data from tampering after
+ *   submission.
+ * - No Data Validation: In line with the prototyping philosophy, these rules do
+ *   not validate the shape or type of the data being submitted. Authorization is
+ *   the sole focus.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    
+    /**
+     * Returns true if the user is signed in (either as a specific user or anonymously).
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description
+     *   Manages access to survey responses. Allows any signed-in user to create a
+     *   response. All responses are public and readable by anyone. After creation,
+     *   documents are immutable and cannot be updated or deleted by clients.
+     * @path
+     *   /survey_responses/{surveyResponseId}
+     * @allow
+     *   (create) An anonymous user who is signed in submitting a new survey.
+     * @allow
+     *   (get) Any client, authenticated or not, reading a specific survey response.
+     * @deny
+     *   (update) Any user attempting to change an existing survey response.
+     * @deny
+     *   (create) An unauthenticated client attempting to submit a survey.
+     * @principle
+     *   Implements a 'write-once, read-many' public data model, ensuring data
+     *   integrity by making submissions immutable from the client.
+     */
+    match /survey_responses/{surveyResponseId} {
+      // READ: Anyone can read individual survey responses or list the entire collection.
+      allow get: if true;
+      allow list: if true;
+
+      // CREATE: Any signed-in user (including anonymous) can submit a new response.
+      allow create: if isSignedIn();
+
+      // UPDATE & DELETE: No client is ever allowed to modify or delete a survey response.
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

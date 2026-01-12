@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "SurveyResponse": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SurveyResponse",
+      "type": "object",
+      "description": "Represents a user's response to the Baiano Burger satisfaction survey.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the survey response."
+        },
+        "nome": {
+          "type": "string",
+          "description": "The name of the user who submitted the survey."
+        },
+        "telefone": {
+          "type": "string",
+          "description": "The phone number of the user who submitted the survey."
+        },
+        "conheceInstagram": {
+          "type": "string",
+          "description": "Indicates whether the user is familiar with the Baiano Burger's Instagram account (Yes/No)."
+        },
+        "avaliacaoGeral": {
+          "type": "number",
+          "description": "The user's overall rating of Baiano Burger (1-5 stars)."
+        },
+        "atendimento": {
+          "type": "string",
+          "description": "The user's rating of the service they received (Excellent/Good/Regular/Ruim)."
+        },
+        "agilidade": {
+          "type": "string",
+          "description": "The user's rating of the speed of order preparation (Muito rápido/Dentro do esperado/Demorado)."
+        },
+        "burger": {
+          "type": "string",
+          "description": "The user's rating of the burger (Perfeito/Bom/Poderia melhorar)."
+        },
+        "sugestao": {
+          "type": "string",
+          "description": "The user's optional suggestions."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the survey response was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "nome",
+        "telefone",
+        "conheceInstagram",
+        "avaliacaoGeral",
+        "atendimento",
+        "agilidade",
+        "burger",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/survey_responses/{surveyResponseId}",
+        "definition": {
+          "entityName": "SurveyResponse",
+          "schema": {
+            "$ref": "#/backend/entities/SurveyResponse"
+          },
+          "description": "Stores survey responses from users, including their contact information, ratings, and suggestions. The {surveyResponseId} is a unique identifier for each submission.",
+          "params": [
+            {
+              "name": "surveyResponseId",
+              "description": "Unique identifier for each survey response document."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "Based on the requirements, a single collection `survey_responses` will be used to store all survey responses. This approach is suitable given the relatively simple data model and access patterns.  All data resides in a single collection, simplifying queries and management. The schema for each document within the `survey_responses` collection includes fields for user identification (name, phone), survey responses (conheceInstagram, avaliacaoGeral, atendimento, agilidade, burger, sugestao), and a creation timestamp (createdAt). This design achieves Authorization Independence because there are no nested collections or complex relationships requiring `get()` calls in security rules.  The application does not have roles or user-specific private data.  Since there are no user-specific roles or ownership considerations, path-based ownership is unnecessary, and segregation isn't required. The structure allows for listing all survey responses, which is acceptable given there are no restrictions in the prompt regarding who can view the data."
+  }
+}
