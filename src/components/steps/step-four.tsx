@@ -18,7 +18,7 @@ type StepState = 'initial' | 'counting' | 'ready' | 'claimed' | 'checking';
 export default function StepFour({ formData }: { formData: FormData }) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const { firestore } = useFirebase();
+  const { firestore, user } = useFirebase();
 
   const [showPrize, setShowPrize] = useState(false);
   const [stepState, setStepState] = useState<StepState>('checking');
@@ -84,7 +84,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
   };
 
   const handleReadyClick = () => {
-    if (!firestore || !prizeDocId || isPending) return;
+    if (!firestore || !prizeDocId || !user || isPending) return;
 
     startTransition(() => {
       const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
@@ -93,18 +93,22 @@ export default function StepFour({ formData }: { formData: FormData }) {
       getDoc(prizeClaimRef).then(docSnap => {
         if (!docSnap.exists()) {
           // Document does not exist, so we can create it.
-          setDocumentNonBlocking(prizeClaimRef, { claimedAt: new Date() }, {});
+          // Include user's UID to comply with security rules.
+          const prizeData = { 
+            claimedAt: new Date(),
+            uid: user.uid 
+          };
+          setDocumentNonBlocking(prizeClaimRef, prizeData, {});
            toast({
              title: 'Obrigado pela sua avaliação!',
              description: 'Sua roleta de prêmios foi desbloqueada! 🔥',
            });
         }
         // Whether it existed or not, we update the UI to the final state.
-        // If it already existed (e.g., due to a double click), this prevents a second write attempt.
         setStepState('claimed');
         setShowPrize(true);
       }).catch(err => {
-        console.error("Error checking prize claim:", err);
+        console.error("Error checking or claiming prize:", err);
         // Fallback: still show the prize to not punish the user for a backend error.
         // The security rule is the ultimate source of truth.
         setStepState('claimed');
@@ -138,7 +142,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
             );
         case 'ready':
             return (
-                <Button onClick={handleReadyClick} disabled={isPending} className="w-full font-bold text-base py-6 animate-pulse">
+                <Button onClick={handleReadyClick} disabled={isPending || !user} className="w-full font-bold text-base py-6 animate-pulse">
                     {isPending ? <Loader2 className="mr-2 animate-spin" /> : <PartyPopper className="mr-2"/>}
                     Liberar minha roleta!
                 </Button>

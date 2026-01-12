@@ -22,21 +22,17 @@ service cloud.firestore {
     
     // Rules for the prize_claims collection
     match /prize_claims/{phoneNumber} {
-      // READ: A user can check if a prize has been claimed for their phone number.
-      // They must be signed in to do this check.
-      allow get: if isSignedIn();
-      
-      // LIST: Listing all claimed prizes is disallowed for security and privacy.
-      allow list: if false;
+        // No one can list all prize claims.
+        allow list: if false;
+        // A user can check if a prize has been claimed for their phone number if they are signed in.
+        allow get: if isSignedIn();
 
-      // WRITE: A user can claim a prize (create or overwrite a document) ONLY IF:
-      // 1. They are signed in.
-      // 2. A document with this phone number ID does not already exist.
-      // This is the core security rule to prevent duplicate prize claims.
-      allow write: if isSignedIn() && !exists(path);
+        // A user can create a prize claim document only if they are the owner of the claim.
+        // The document ID must be their phone number.
+        allow create: if request.auth.uid == request.resource.data.uid;
 
-      // DELETE: Once a prize is claimed, it cannot be deleted by any client.
-      allow delete: if false;
+        // No one can update or delete a prize claim.
+        allow update, delete: if false;
     }
   }
 }
