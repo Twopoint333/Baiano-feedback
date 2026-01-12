@@ -7,7 +7,7 @@ import { PartyPopper, Timer, Gift, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Roulette } from '@/components/roulette';
 import type { FormData } from '@/app/page';
-import { useFirebase, useDoc } from '@/firebase';
+import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 const GOOGLE_REVIEW_LINK = 'https://maps.app.goo.gl/Z9txxdfoj3puf7V49?g_st=ic';
@@ -22,7 +22,11 @@ export default function StepFour({ formData }: { formData: FormData }) {
 
   // Sanitize phone number to use as a document ID
   const prizeDocId = formData.telefone.replace(/\D/g, '');
-  const prizeClaimRef = prizeDocId ? doc(firestore, 'prize_claims', prizeDocId) : null;
+
+  const prizeClaimRef = useMemoFirebase(() => {
+    if (!firestore || !prizeDocId) return null;
+    return doc(firestore, 'prize_claims', prizeDocId);
+  }, [firestore, prizeDocId]);
   
   // Real-time check if prize has been claimed
   const { data: prizeClaim, isLoading: isClaimLoading } = useDoc(prizeClaimRef);
