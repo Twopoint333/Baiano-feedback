@@ -7,8 +7,8 @@ import { PartyPopper, Timer, Gift, Loader2, RotateCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Roulette } from '@/components/roulette';
 import type { FormData } from '@/app/page';
-import { useFirebase, setDocumentNonBlocking } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { useFirebase, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { doc, getDoc, DocumentSnapshot } from 'firebase/firestore';
 
 const GOOGLE_REVIEW_LINK = 'https://maps.app.goo.gl/Z9txxdfoj3puf7V49?g_st=ic';
 const MIN_REVIEW_TIME_S = 30; // 30 segundos
@@ -23,6 +23,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
   const [showPrize, setShowPrize] = useState(false);
   const [stepState, setStepState] = useState<StepState>('checking');
   const [secondsRemaining, setSecondsRemaining] = useState(MIN_REVIEW_TIME_S);
+  const [claimedPrize, setClaimedPrize] = useState<string | null>(null);
 
   const prizeDocId = formData.telefone.replace(/\D/g, '');
 
@@ -34,10 +35,15 @@ export default function StepFour({ formData }: { formData: FormData }) {
       }
       
       const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
-      const docSnap = await getDoc(prizeClaimRef);
+      const docSnap: DocumentSnapshot = await getDoc(prizeClaimRef);
+      
       if (docSnap.exists()) {
+        const prizeData = docSnap.data();
         setStepState('claimed');
         setShowPrize(true); // If already claimed, show the prize screen directly
+        if(prizeData.prize) {
+            setClaimedPrize(prizeData.prize);
+        }
         return;
       }
 
@@ -89,32 +95,32 @@ export default function StepFour({ formData }: { formData: FormData }) {
     startTransition(() => {
       const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
       
-      // Explicitly check if doc exists before writing to align with security rules
       getDoc(prizeClaimRef).then(docSnap => {
         if (!docSnap.exists()) {
-          // Document does not exist, so we can create it.
-          // Include user's UID to comply with security rules.
           const prizeData = { 
             claimedAt: new Date(),
             uid: user.uid 
           };
           setDocumentNonBlocking(prizeClaimRef, prizeData, {});
-           toast({
-             title: 'Obrigado pela sua avaliação!',
-             description: 'Sua roleta de prêmios foi desbloqueada! 🔥',
-           });
+          toast({
+            title: 'Obrigado pela sua avaliação!',
+            description: 'Sua roleta de prêmios foi desbloqueada! 🔥',
+          });
         }
-        // Whether it existed or not, we update the UI to the final state.
         setStepState('claimed');
         setShowPrize(true);
       }).catch(err => {
         console.error("Error checking or claiming prize:", err);
-        // Fallback: still show the prize to not punish the user for a backend error.
-        // The security rule is the ultimate source of truth.
         setStepState('claimed');
         setShowPrize(true);
       });
     });
+  };
+
+  const handlePrizeWon = (prize: string) => {
+    if (!firestore || !prizeDocId || !user) return;
+    const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
+    updateDocumentNonBlocking(prizeClaimRef, { prize: prize });
   };
   
   const getButton = () => {
@@ -162,7 +168,7 @@ export default function StepFour({ formData }: { formData: FormData }) {
              </p>
              <Card>
                 <CardContent className="p-6">
-                   <Roulette />
+                   <Roulette onPrizeWon={handlePrizeWon} claimedPrize={claimedPrize} />
                 </CardContent>
              </Card>
              <p className="text-lg text-foreground/80 leading-relaxed">

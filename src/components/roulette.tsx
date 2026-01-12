@@ -134,10 +134,15 @@ const RouletteWheel = ({
   );
 };
 
-export function Roulette() {
+interface RouletteProps {
+  onPrizeWon: (prize: string) => void;
+  claimedPrize: string | null;
+}
+
+export function Roulette({ onPrizeWon, claimedPrize }: RouletteProps) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
-  const [spinResult, setSpinResult] = useState<string | null>(null);
+  const [spinResult, setSpinResult] = useState<string | null>(claimedPrize);
   const currentRotationRef = useRef(0);
   const rouletteRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -159,7 +164,7 @@ export function Roulette() {
   }));
 
   const spin = () => {
-    if (isSpinning) return;
+    if (isSpinning || claimedPrize) return;
 
     if (audioRef.current) {
         audioRef.current.currentTime = 0;
@@ -197,7 +202,9 @@ export function Roulette() {
       const degPerItem = 360 / items.length;
       const winningSectorIndex = Math.floor(normalizedAngle / degPerItem);
       
-      setSpinResult(items[winningSectorIndex].text);
+      const prize = items[winningSectorIndex].text;
+      setSpinResult(prize);
+      onPrizeWon(prize); // Callback to parent
       setIsSpinning(false);
     };
 
@@ -211,7 +218,7 @@ export function Roulette() {
         rouletteElement.removeEventListener('transitionend', handleTransitionEnd);
       }
     };
-  }, [isSpinning, items]);
+  }, [isSpinning, items, onPrizeWon]);
 
   const hasSpun = spinResult !== null;
 
@@ -241,7 +248,7 @@ export function Roulette() {
       </div>
       
       {!hasSpun && (
-        <Button onClick={spin} disabled={isSpinning} className="w-full max-w-xs font-bold text-lg py-7 animate-pulse">
+        <Button onClick={spin} disabled={isSpinning || !!claimedPrize} className="w-full max-w-xs font-bold text-lg py-7 animate-pulse">
           {isSpinning ? 'Girando...' : 'Girar a Roleta!'}
         </Button>
       )}
