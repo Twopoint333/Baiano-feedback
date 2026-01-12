@@ -74,6 +74,7 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setChecking(true);
+    setPrizeClaimed(false);
     updateFormData(data);
 
     if (!firestore) {
@@ -92,21 +93,18 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
         // User has already claimed a prize. Show message and STOP.
         setPrizeClaimed(true);
         setChecking(false);
-        return; // <-- Explicitly stop execution here
+        return;
       }
       
       // User has not claimed a prize. Proceed to the next step.
-      setPrizeClaimed(false);
       nextStep();
+      setChecking(false);
 
     } catch (error) {
       console.error("Error checking prize claim:", error);
       // Let's be safe and let the user proceed if there's a check error.
       // The backend rules will still prevent a duplicate claim.
       nextStep();
-    } finally {
-      // This will only be reached if an error occurs or the check is successful.
-      // The `return` in the `if` block prevents this from running for claimed prizes.
       setChecking(false);
     }
   }
