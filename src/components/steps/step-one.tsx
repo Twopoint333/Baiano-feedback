@@ -28,7 +28,6 @@ interface StepOneProps {
   formData: Partial<FormData>;
 }
 
-// Regex for (99) 99999-9999 or (99) 9999-9999
 const phoneRegex = /^\(?\d{2}\)?\s?9?\d{4}-?\d{4}$/;
 
 
