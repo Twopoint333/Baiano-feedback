@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 // --- Senha de Acesso ---
-const DASHBOARD_PASSWORD = 'baiano_burger_2024'; // Senha para acessar o dashboard
+const DASHBOARD_PASSWORD = 'Baiano2k25'; // Senha para acessar o dashboard
 
 // --- Cores para os gráficos ---
 const COLORS = ['#90BE6D', '#F9C74F', '#F3722C', '#F94144'];
