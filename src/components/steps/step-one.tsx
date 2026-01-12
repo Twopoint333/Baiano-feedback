@@ -81,31 +81,30 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
     if (!firestore) {
       console.error("Firestore not available");
       setChecking(false);
+      // Optionally show a user-facing error
       return;
     }
     
-    // Use the sanitized phone number as the document ID to check for an existing survey response
     const surveyDocId = data.telefone.replace(/\D/g, '');
-    const surveyResponseRef = doc(firestore, 'survey_responses', surveyDocId);
     
     try {
+      const surveyResponseRef = doc(firestore, 'survey_responses', surveyDocId);
       const docSnap = await getDoc(surveyResponseRef);
       
       if (docSnap.exists()) {
-        // If the document exists, the user has already participated.
         setHasAlreadyParticipated(true);
         setChecking(false);
-        return; // Stop the execution here.
+        return; // STOP execution here, user has participated.
       }
       
-      // Only proceed if the document does not exist.
+      // If we are here, the user has NOT participated. Proceed.
       updateFormData(data);
       nextStep();
 
     } catch (error) {
       console.error("Error checking for existing survey response:", error);
       // To be safe, let the user proceed if there's a check error.
-      // The `setDoc` in step three will handle overwriting, but this is a fallback.
+      // This is a fallback to avoid blocking users due to network/db issues.
       updateFormData(data);
       nextStep();
     } finally {
