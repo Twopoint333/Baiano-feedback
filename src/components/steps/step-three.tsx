@@ -5,8 +5,8 @@ import { useForm, type FieldErrors } from 'react-hook-form';
 import { z } from 'zod';
 import { useEffect, useState, useTransition } from 'react';
 import type { FormData } from '@/app/page';
-import { collection, serverTimestamp } from 'firebase/firestore';
-import { useFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp, doc } from 'firebase/firestore';
+import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 
 
 import { Button } from '@/components/ui/button';
@@ -144,7 +144,18 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
     updateFormData(fullData);
     
     startTransition(() => {
-      const surveyCollectionRef = collection(firestore, 'survey_responses');
+      // Sanitize phone number to use as document ID
+      const surveyDocId = fullData.telefone.replace(/\D/g, '');
+      if (!firestore || !surveyDocId) {
+        toast({
+          variant: 'destructive',
+          title: "Erro!",
+          description: "Não foi possível salvar a pesquisa. Telefone inválido.",
+        });
+        return;
+      }
+      
+      const surveyDocRef = doc(firestore, 'survey_responses', surveyDocId);
       
       const dataToSave = {
         nome: fullData.nome,
@@ -160,7 +171,8 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
         blogueiraNome: fullData.blogueiraNome,
       };
 
-      addDocumentNonBlocking(surveyCollectionRef, dataToSave);
+      // Use setDoc with merge to create or overwrite the survey response.
+      setDocumentNonBlocking(surveyDocRef, dataToSave, { merge: true });
       
       toast({
         title: "Sucesso!",
