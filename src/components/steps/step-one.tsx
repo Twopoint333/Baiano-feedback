@@ -28,15 +28,15 @@ interface StepOneProps {
   formData: Partial<FormData>;
 }
 
-const phoneRegex = new RegExp(
-  /^\\(?([0-9]{2})\\)?(\\s|-)?(9[0-9]{4})-?([0-9]{4})$/
-);
+// Regex for (99) 99999-9999 or (99) 9999-9999
+const phoneRegex = /^\(?\d{2}\)?\s?9?\d{4}-?\d{4}$/;
+
 
 const FormSchema = z.object({
   nome: z.string().min(2, {
     message: 'O nome deve ter pelo menos 2 caracteres.',
   }),
-  telefone: z.string().regex(phoneRegex, {
+  telefone: z.string().refine(value => phoneRegex.test(value), {
     message: 'Formato: (99) 99999-9999',
   }),
 });
@@ -62,9 +62,9 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
     }
     if (input.length > 2) {
       formatted += `) ${input.substring(2, 7)}`;
-      if (input.length > 7) {
-        formatted += `-${input.substring(7, 11)}`;
-      }
+    }
+    if (input.length > 7) {
+      formatted += `-${input.substring(7, 11)}`;
     }
     form.setValue('telefone', formatted);
     if (prizeClaimed) {
@@ -105,14 +105,7 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
       updateFormData(data);
       nextStep();
     } finally {
-      // For the success case (doc doesn't exist), we don't need to setChecking(false)
-      // because the component will unmount. For the error cases and the
-      // prizeClaimed case, it's handled inside the blocks.
-      if (!docSnap.exists()) {
-        // This branch is only taken if the document does not exist
-      } else {
         setChecking(false);
-      }
     }
   }
 
