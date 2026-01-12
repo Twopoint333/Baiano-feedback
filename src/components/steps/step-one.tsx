@@ -58,11 +58,13 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
     if (input.length > 0) {
       formatted = `(${input.substring(0, 2)}`;
     }
-    if (input.length > 2 && input.length <= 6) {
-      formatted += `) ${input.substring(2, 7)}`;
-    }
-    if (input.length > 7) {
-      formatted += `) ${input.substring(2, 7)}-${input.substring(7, 11)}`;
+    if (input.length > 2) {
+      const remainingLength = input.length - 2;
+      const part1Length = remainingLength > 5 ? 5 : remainingLength;
+      formatted += `) ${input.substring(2, 2 + part1Length)}`;
+      if (remainingLength > 5) {
+        formatted += `-${input.substring(7, 11)}`;
+      }
     } else if (input.length > 2) {
       formatted += `) ${input.substring(2)}`;
     }
