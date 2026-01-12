@@ -20,20 +20,11 @@ export default function StepFour({ formData }: { formData: FormData }) {
   const { toast } = useToast();
   const { firestore } = useFirebase();
 
-  // Sanitize phone number to use as a document ID
-  const prizeDocId = formData.telefone.replace(/\D/g, '');
-
-  const prizeClaimRef = useMemoFirebase(() => {
-    if (!firestore || !prizeDocId) return null;
-    return doc(firestore, 'prize_claims', prizeDocId);
-  }, [firestore, prizeDocId]);
-
   const [showPrize, setShowPrize] = useState(false);
   const [stepState, setStepState] = useState<StepState>('initial');
   const [secondsRemaining, setSecondsRemaining] = useState(MIN_REVIEW_TIME_S);
 
   // This effect handles the timer logic based on localStorage.
-  // It is the main driver for the UI state before the prize is claimed.
   useEffect(() => {
     const reviewTimeKey = `reviewButtonClickedTime_${formData.telefone}`;
     const reviewTime = localStorage.getItem(reviewTimeKey);
@@ -75,17 +66,17 @@ export default function StepFour({ formData }: { formData: FormData }) {
   };
 
   const handleReadyClick = () => {
-    if (!prizeClaimRef) return;
+    // Sanitize phone number to use as a document ID
+    const prizeDocId = formData.telefone.replace(/\D/g, '');
+    if (!firestore || !prizeDocId) return;
+
+    const prizeClaimRef = doc(firestore, 'prize_claims', prizeDocId);
 
     startTransition(() => {
       // Attempt to claim the prize. Firestore rules will prevent duplicates.
-      // This is non-blocking and will use the global error handler on failure.
       setDocumentNonBlocking(prizeClaimRef, { claimedAt: new Date() }, { merge: false });
       
-      // We proceed with an optimistic UI update. The security rule is the ultimate source of truth.
-      // If the write fails because the document exists, the global error handler will catch it,
-      // but the UI will still show the prize screen. This is acceptable since StepOne
-      // should have already prevented this user from getting here.
+      // Optimistically update the UI. The security rule is the source of truth.
       setStepState('claimed');
       setShowPrize(true);
       toast({

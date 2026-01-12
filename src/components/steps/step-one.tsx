@@ -90,22 +90,21 @@ export default function StepOne({ nextStep, updateFormData, formData }: StepOneP
       const docSnap = await getDoc(prizeClaimRef);
       
       if (docSnap.exists()) {
-        // User has already claimed a prize. Show message and STOP.
         setPrizeClaimed(true);
         setChecking(false);
-        return;
+        return; // STOP EXECUTION HERE
       }
       
-      // User has not claimed a prize. Proceed to the next step.
+      // Only proceed if doc does not exist
       nextStep();
-      setChecking(false);
 
     } catch (error) {
       console.error("Error checking prize claim:", error);
       // Let's be safe and let the user proceed if there's a check error.
       // The backend rules will still prevent a duplicate claim.
       nextStep();
-      setChecking(false);
+    } finally {
+        setChecking(false);
     }
   }
 
