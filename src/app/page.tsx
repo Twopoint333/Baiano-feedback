@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import StepOne from '@/components/steps/step-one';
 import StepTwo from '@/components/steps/step-two';
 import StepThree from '@/components/steps/step-three';
 import StepFour from '@/components/steps/step-four';
 import { Logo } from '@/components/logo';
+import { useFirebase, initiateAnonymousSignIn } from '@/firebase';
 
 export type FormData = {
   nome: string;
@@ -35,6 +36,15 @@ export default function Home() {
     sugestao: '',
   });
 
+  const { auth, user, isUserLoading } = useFirebase();
+  
+  useEffect(() => {
+    // Initiate anonymous sign-in if no user is logged in and not currently loading
+    if (!isUserLoading && !user) {
+      initiateAnonymousSignIn(auth);
+    }
+  }, [auth, user, isUserLoading]);
+
   const nextStep = () => setStep((prev) => prev + 1);
 
   const updateFormData = (data: Partial<FormData>) => {
@@ -56,7 +66,7 @@ export default function Home() {
           />
         );
       case 4:
-        return <StepFour />;
+        return <StepFour formData={formData} />;
       default:
         return <StepOne nextStep={nextStep} updateFormData={updateFormData} formData={formData} />;
     }

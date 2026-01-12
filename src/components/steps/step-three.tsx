@@ -5,6 +5,9 @@ import { useForm, type FieldErrors } from 'react-hook-form';
 import { z } from 'zod';
 import { useEffect, useState, useTransition } from 'react';
 import type { FormData } from '@/app/page';
+import { collection, serverTimestamp } from 'firebase/firestore';
+import { useFirebase, addDocumentNonBlocking } from '@/firebase';
+
 
 import { Button } from '@/components/ui/button';
 import {
@@ -81,6 +84,7 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
   const [isPending, startTransition] = useTransition();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
+  const { firestore } = useFirebase();
 
   const form = useForm<SurveyFormData>({
     resolver: zodResolver(SurveySchema),
@@ -111,29 +115,22 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
   const onInvalid = (errors: FieldErrors<SurveyFormData>) => {
     const firstErrorField = questionOrder.find(field => errors[field]);
     if (firstErrorField) {
-      // The `ref` from react-hook-form can be an element or a custom component ref.
-      // We are looking for the actual DOM element to scroll to.
       const fieldRef = (form.control._fields[firstErrorField] as any)?._f.ref;
       let element: HTMLElement | null = null;
   
       if (fieldRef) {
-        if (fieldRef.current && fieldRef.current.closest) { // For custom components with forwarded refs
-          element = fieldRef.current;
-        } else if (fieldRef.closest) { // For native elements
+        if (fieldRef.closest) {
           element = fieldRef;
         }
       }
   
-      // If we have a direct element, find its container and scroll.
       if (element) {
         element.closest('[data-form-item-container]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
-        // Fallback for fields where the ref is not a direct DOM element (less common).
         const namedElement = document.getElementsByName(firstErrorField)[0];
         if (namedElement) {
           namedElement.closest('[data-form-item-container]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
-          // If all else fails, scroll to top.
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       }
@@ -147,8 +144,24 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
     updateFormData(fullData);
     
     startTransition(() => {
-      // Here you would typically send the data to your backend
-      // await saveSurveyData(fullData);
+      const surveyCollectionRef = collection(firestore, 'survey_responses');
+      
+      const dataToSave = {
+        nome: fullData.nome,
+        telefone: fullData.telefone,
+        conheceInstagram: fullData.comoNosConheceu === 'Instagram' ? 'Yes' : 'No', // Simplified for schema
+        avaliacaoGeral: fullData.avaliacaoGeral,
+        atendimento: fullData.atendimento,
+        agilidade: fullData.agilidade,
+        burger: fullData.burger,
+        sugestao: `${fullData.melhoriaBurger} ${fullData.sugestao}`.trim(),
+        createdAt: serverTimestamp(),
+        comoNosConheceu: fullData.comoNosConheceu,
+        blogueiraNome: fullData.blogueiraNome,
+      };
+
+      addDocumentNonBlocking(surveyCollectionRef, dataToSave);
+      
       toast({
         title: "Sucesso!",
         description: "Sua pesquisa foi enviada.",
@@ -269,8 +282,8 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
               <FormField
                 control={form.control}
                 name="avaliacaoGeral"
-                render={({ field: { onChange, value, ref } }) => (
-                  <FormItem ref={ref} data-form-item-container className="space-y-3 text-left p-4 border rounded-lg bg-card">
+                render={({ field: { onChange, value } }) => (
+                  <FormItem data-form-item-container className="space-y-3 text-left p-4 border rounded-lg bg-card">
                     <FormLabel className="text-base font-semibold">Como você avalia o Baiano Burger?</FormLabel>
                     <FormControl>
                        <StarRating value={value} onValueChange={onChange} />

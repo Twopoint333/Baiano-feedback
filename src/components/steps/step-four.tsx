@@ -6,26 +6,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { PartyPopper, Timer, Gift, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Roulette } from '@/components/roulette';
+import type { FormData } from '@/app/page';
 
 const GOOGLE_REVIEW_LINK = 'https://maps.app.goo.gl/Z9txxdfoj3puf7V49?g_st=ic';
 const MIN_REVIEW_TIME_S = 30; // 30 segundos
 
 type StepState = 'initial' | 'counting' | 'ready';
 
-export default function StepFour() {
+export default function StepFour({ formData }: { formData: FormData }) {
   const [showPrize, setShowPrize] = useState(false);
   const [stepState, setStepState] = useState<StepState>('initial');
   const [secondsRemaining, setSecondsRemaining] = useState(MIN_REVIEW_TIME_S);
   const { toast } = useToast();
 
   useEffect(() => {
-    const prizeUnlocked = localStorage.getItem('prizeUnlocked');
+    // Use phone number to check if prize was unlocked to make it unique per user
+    const prizeUnlockedKey = `prizeUnlocked_${formData.telefone}`;
+    const prizeUnlocked = localStorage.getItem(prizeUnlockedKey);
     if (prizeUnlocked === 'true') {
       setShowPrize(true);
       return;
     }
 
-    const reviewTime = localStorage.getItem('reviewButtonClickedTime');
+    const reviewTimeKey = `reviewButtonClickedTime_${formData.telefone}`;
+    const reviewTime = localStorage.getItem(reviewTimeKey);
     if (reviewTime) {
       const timeElapsed = (Date.now() - Number(reviewTime)) / 1000;
       if (timeElapsed >= MIN_REVIEW_TIME_S) {
@@ -35,7 +39,7 @@ export default function StepFour() {
         setSecondsRemaining(Math.ceil(MIN_REVIEW_TIME_S - timeElapsed));
       }
     }
-  }, []);
+  }, [formData.telefone]);
 
   useEffect(() => {
     if (stepState !== 'counting') return;
@@ -53,14 +57,16 @@ export default function StepFour() {
   }, [stepState, secondsRemaining]);
 
   const handleInitialClick = () => {
-    localStorage.setItem('reviewButtonClickedTime', String(Date.now()));
+    const reviewTimeKey = `reviewButtonClickedTime_${formData.telefone}`;
+    localStorage.setItem(reviewTimeKey, String(Date.now()));
     setStepState('counting');
     window.open(GOOGLE_REVIEW_LINK, '_blank');
   };
 
   const handleReadyClick = () => {
-    // Aqui viria a lógica para verificar no Firestore se o telefone já participou.
-    localStorage.setItem('prizeUnlocked', 'true');
+    // Here we'd typically check Firestore. For now, we use localStorage.
+    const prizeUnlockedKey = `prizeUnlocked_${formData.telefone}`;
+    localStorage.setItem(prizeUnlockedKey, 'true');
     setShowPrize(true);
     toast({
       title: 'Obrigado pela sua avaliação!',
