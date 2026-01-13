@@ -10,6 +10,7 @@ export interface SurveyResponse {
     agilidade: 'Muito rápido' | 'Dentro do esperado' | 'Demorado' | '';
     burger: 'Perfeito 🔥' | 'Bom 👍' | 'Poderia melhorar 🤔' | '';
     sugestao: string;
+    melhoriaBurger?: string;
     createdAt: any; // Pode ser um Timestamp do Firebase
     premioGanho?: string;
     uid: string;
