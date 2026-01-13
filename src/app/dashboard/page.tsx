@@ -251,7 +251,7 @@ export default function Dashboard() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                         <ScrollArea className="h-[400px] w-full rounded-md border">
+                         <div className="w-full overflow-auto rounded-md border">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -269,18 +269,18 @@ export default function Dashboard() {
                                     {surveyResponses && surveyResponses.length > 0 ? (
                                         surveyResponses.map(r => (
                                             <TableRow key={r.id}>
-                                                <TableCell className="font-medium">{r.nome}</TableCell>
-                                                <TableCell>{r.telefone}</TableCell>
+                                                <TableCell className="font-medium whitespace-nowrap">{r.nome}</TableCell>
+                                                <TableCell className="whitespace-nowrap">{r.telefone}</TableCell>
                                                 <TableCell className="text-center">
                                                     <Badge variant="outline">{r.avaliacaoGeral} ★</Badge>
                                                 </TableCell>
-                                                <TableCell>{r.atendimento}</TableCell>
-                                                <TableCell>{r.agilidade}</TableCell>
-                                                <TableCell>{r.burger}</TableCell>
+                                                <TableCell className="whitespace-nowrap">{r.atendimento}</TableCell>
+                                                <TableCell className="whitespace-nowrap">{r.agilidade}</TableCell>
+                                                <TableCell className="whitespace-nowrap">{r.burger}</TableCell>
                                                 <TableCell>
                                                     {r.premioGanho ? <Badge>{r.premioGanho}</Badge> : <span className="text-muted-foreground text-xs">N/A</span>}
                                                 </TableCell>
-                                                <TableCell className="max-w-xs truncate">{r.sugestao || '-'}</TableCell>
+                                                <TableCell className="min-w-[200px] max-w-xs truncate">{r.sugestao || '-'}</TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
@@ -292,7 +292,7 @@ export default function Dashboard() {
                                     )}
                                 </TableBody>
                             </Table>
-                         </ScrollArea>
+                         </div>
                     </CardContent>
                 </Card>
             </div>
