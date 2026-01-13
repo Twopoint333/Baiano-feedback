@@ -5,7 +5,10 @@ import { collection } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirebase, useMemoFirebase } from '@/firebase';
 import type { SurveyResponse } from '@/lib/types';
-import { Lock, Download, BarChart2, Star, Users, MessageSquare, ThumbsUp, Clock, Coffee, Loader2 } from 'lucide-react';
+import { Lock, Download, BarChart2, Star, Users, MessageSquare, ThumbsUp, Clock, Coffee, Loader2, FileDown, Share2, Users2 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 const DASHBOARD_PASSWORD = 'Baiano2k25'; // Senha para acessar o dashboard
 
 // --- Cores para os gráficos ---
-const COLORS = ['#90BE6D', '#F9C74F', '#F3722C', '#F94144'];
+const COLORS = ['#90BE6D', '#F9C74F', '#F3722C', '#F94144', '#43AA8B', '#F9844A'];
 const RATING_COLORS = ['#F94144', '#F3722C', '#F8961E', '#F9C74F', '#90BE6D'];
 
 // --- Componente de Gráfico de Pizza Genérico ---
@@ -39,6 +42,7 @@ const CustomPieChart = ({ data, title, icon: Icon }: { data: any[], title: strin
                             ))}
                         </Pie>
                         <Tooltip formatter={(value, name) => [`${value} (${(value / data.reduce((acc, curr) => acc + curr.value, 0) * 100).toFixed(1)}%)`, name]}/>
+                        <Legend />
                     </PieChart>
                 </ResponsiveContainer>
             ) : (
@@ -99,7 +103,20 @@ export default function Dashboard() {
         const atendimentoData = processData('atendimento');
         const agilidadeData = processData('agilidade');
         const burgerData = processData('burger');
+        const comoNosConheceuData = processData('comoNosConheceu');
         
+        const blogueiraCounts = surveyResponses
+            .filter(r => r.comoNosConheceu === 'Blogueira' && r.blogueiraNome)
+            .reduce((acc, r) => {
+                const name = r.blogueiraNome!.trim();
+                acc[name] = (acc[name] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
+
+        const blogueiraData = Object.entries(blogueiraCounts)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value);
+
         const avaliacaoGeralCounts = surveyResponses.reduce((acc, r) => {
             const rating = r.avaliacaoGeral;
             if (rating) {
@@ -121,7 +138,9 @@ export default function Dashboard() {
             atendimentoData,
             agilidadeData,
             burgerData,
-            avaliacaoGeralData
+            avaliacaoGeralData,
+            comoNosConheceuData,
+            blogueiraData
         };
     }, [surveyResponses]);
     
@@ -139,6 +158,33 @@ export default function Dashboard() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    const handleExportPDF = () => {
+        if (!surveyResponses) return;
+
+        const doc = new jsPDF();
+        doc.text("Respostas Detalhadas - Baiano Burger", 14, 16);
+        
+        (doc as any).autoTable({
+            startY: 22,
+            head: [['Nome', 'Telefone', 'Avaliação', 'Atendimento', 'Agilidade', 'Burger', 'Melhoria', 'Sugestão', 'Prêmio']],
+            body: surveyResponses.map(r => [
+                r.nome,
+                r.telefone,
+                `${r.avaliacaoGeral} ★`,
+                r.atendimento,
+                r.agilidade,
+                r.burger,
+                r.burger === 'Poderia melhorar 🤔' ? (r.sugestao || '-') : '-',
+                r.burger !== 'Poderia melhorar 🤔' ? (r.sugestao || '-') : '-',
+                r.premioGanho || 'N/A'
+            ]),
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [249, 65, 68] }, // Cor primária
+        });
+
+        doc.save('respostas_baiano_burger.pdf');
     };
 
     if (!isAuthenticated) {
@@ -182,10 +228,16 @@ export default function Dashboard() {
                         <h1 className="text-3xl font-bold tracking-tight">Dashboard de Feedback</h1>
                         <p className="text-muted-foreground">Análise das respostas da pesquisa de satisfação.</p>
                     </div>
-                    <Button onClick={handleExportCSV} disabled={!surveyResponses || surveyResponses.length === 0}>
-                        <Download className="mr-2" />
-                        Exportar Contatos (CSV)
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button onClick={handleExportCSV} disabled={!surveyResponses || surveyResponses.length === 0} variant="outline">
+                            <Download className="mr-2 h-4 w-4" />
+                            Exportar Contatos (CSV)
+                        </Button>
+                        <Button onClick={handleExportPDF} disabled={!surveyResponses || surveyResponses.length === 0}>
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Exportar Respostas (PDF)
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Cards de Métricas */}
@@ -211,8 +263,38 @@ export default function Dashboard() {
                 </div>
 
                 {/* Gráficos */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4">
+                        <CustomPieChart data={metrics.comoNosConheceuData} title="Como nos conheceu?" icon={Share2} />
+                        <CustomPieChart data={metrics.atendimentoData} title="Como foi o Atendimento?" icon={ThumbsUp} />
+                    </div>
+                     <div className="grid grid-cols-1 gap-4">
+                        <CustomPieChart data={metrics.agilidadeData} title="Agilidade no Preparo" icon={Clock} />
+                        <CustomPieChart data={metrics.burgerData} title="Como estava o Burger?" icon={Coffee} />
+                    </div>
                     <Card>
+                        <CardHeader>
+                            <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                <Users2 className="h-4 w-4 text-muted-foreground" />
+                                Blogueiras Mencionadas
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                             <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={metrics.blogueiraData} layout="vertical">
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis type="number" allowDecimals={false} />
+                                    <YAxis dataKey="name" type="category" width={80} />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="value" name="Menções" fill="#F3722C" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                </div>
+                
+                 <Card>
                         <CardHeader>
                             <CardTitle className="text-sm font-medium flex items-center gap-2">
                                 <BarChart2 className="h-4 w-4 text-muted-foreground" />
@@ -226,21 +308,15 @@ export default function Dashboard() {
                                     <XAxis dataKey="name" />
                                     <YAxis allowDecimals={false} />
                                     <Tooltip />
-                                    <Bar dataKey="value" name="Respostas" fill="#8884d8">
+                                    <Bar dataKey="value" name="Respostas">
                                         {metrics.avaliacaoGeralData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={RATING_COLORS[parseInt(entry.name) - 1]} />
+                                            <Cell key={`cell-${index}`} fill={RATING_COLORS[parseInt(entry.name) - 1] || '#8884d8'} />
                                         ))}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
                         </CardContent>
                     </Card>
-                     <div className="grid grid-cols-1 gap-4">
-                        <CustomPieChart data={metrics.atendimentoData} title="Como foi o Atendimento?" icon={ThumbsUp} />
-                        <CustomPieChart data={metrics.agilidadeData} title="Agilidade no Preparo" icon={Clock} />
-                        <CustomPieChart data={metrics.burgerData} title="Como estava o Burger?" icon={Coffee} />
-                    </div>
-                </div>
 
                 {/* Tabela de Respostas */}
                 <Card>
@@ -261,8 +337,9 @@ export default function Dashboard() {
                                         <TableHead>Atendimento</TableHead>
                                         <TableHead>Agilidade</TableHead>
                                         <TableHead>Burger</TableHead>
-                                        <TableHead>Prêmio</TableHead>
+                                        <TableHead>Melhoria</TableHead>
                                         <TableHead>Sugestão</TableHead>
+                                        <TableHead>Prêmio</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -277,15 +354,20 @@ export default function Dashboard() {
                                                 <TableCell className="whitespace-nowrap">{r.atendimento}</TableCell>
                                                 <TableCell className="whitespace-nowrap">{r.agilidade}</TableCell>
                                                 <TableCell className="whitespace-nowrap">{r.burger}</TableCell>
+                                                <TableCell className="min-w-[200px] max-w-xs truncate">
+                                                    {r.burger === 'Poderia melhorar 🤔' ? (r.sugestao || '-') : '-'}
+                                                </TableCell>
+                                                <TableCell className="min-w-[200px] max-w-xs truncate">
+                                                    {r.burger !== 'Poderia melhorar 🤔' ? (r.sugestao || '-') : '-'}
+                                                </TableCell>
                                                 <TableCell>
                                                     {r.premioGanho ? <Badge>{r.premioGanho}</Badge> : <span className="text-muted-foreground text-xs">N/A</span>}
                                                 </TableCell>
-                                                <TableCell className="min-w-[200px] max-w-xs truncate">{r.sugestao || '-'}</TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="h-24 text-center">
+                                            <TableCell colSpan={9} className="h-24 text-center">
                                                 Nenhuma resposta ainda.
                                             </TableCell>
                                         </TableRow>
