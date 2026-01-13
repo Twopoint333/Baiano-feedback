@@ -54,7 +54,19 @@ const SurveySchema = z.object({
 }).refine(data => !(data.comoNosConheceu === 'Blogueira' && !data.blogueiraNome), {
   message: "Por favor, informe o nome da blogueira.",
   path: ['blogueiraNome'],
+}).superRefine((data, ctx) => {
+  if (
+    data.burger === 'Poderia melhorar 🤔' &&
+    (!data.melhoriaBurger || data.melhoriaBurger.trim() === '')
+  ) {
+    ctx.addIssue({
+      path: ['melhoriaBurger'],
+      message: 'Conte pra gente o que podemos melhorar 🙂',
+      code: z.ZodIssueCode.custom,
+    });
+  }
 });
+
 
 type SurveyFormData = z.infer<typeof SurveySchema>;
 
@@ -144,7 +156,6 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
     updateFormData(fullData);
     
     startTransition(() => {
-      // Sanitize phone number to use as document ID
       const surveyDocId = fullData.telefone.replace(/\D/g, '');
       if (!firestore || !surveyDocId || !user) {
         toast({
@@ -161,19 +172,20 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
         uid: user.uid,
         nome: fullData.nome,
         telefone: fullData.telefone,
-        conheceInstagram: fullData.comoNosConheceu === 'Instagram' ? 'Yes' : 'No',
         avaliacaoGeral: fullData.avaliacaoGeral,
         atendimento: fullData.atendimento,
         agilidade: fullData.agilidade,
         burger: fullData.burger,
-        sugestao: fullData.sugestao,
-        melhoriaBurger: fullData.melhoriaBurger,
-        createdAt: serverTimestamp(),
+        melhoriaBurger:
+          fullData.burger === 'Poderia melhorar 🤔'
+            ? fullData.melhoriaBurger || null
+            : null,
+        sugestao: fullData.sugestao || null,
         comoNosConheceu: fullData.comoNosConheceu,
-        blogueiraNome: fullData.blogueiraNome,
+        blogueiraNome: fullData.blogueiraNome || null,
+        createdAt: serverTimestamp(),
       };
 
-      // Use setDoc with merge to create or overwrite the survey response.
       setDocumentNonBlocking(surveyDocRef, dataToSave, { merge: true });
       
       toast({

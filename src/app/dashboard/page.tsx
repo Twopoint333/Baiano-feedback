@@ -185,8 +185,8 @@ export default function Dashboard() {
                 r.atendimento,
                 r.agilidade,
                 r.burger,
-                r.melhoriaBurger || '-',
-                r.sugestao || '-',
+                r.melhoriaBurger || 'N/A',
+                r.sugestao || 'N/A',
                 r.premioGanho || 'N/A'
             ]),
             styles: { fontSize: 8 },
@@ -361,10 +361,10 @@ export default function Dashboard() {
                                                 <TableCell className="whitespace-nowrap">{r.agilidade}</TableCell>
                                                 <TableCell className="whitespace-nowrap">{r.burger}</TableCell>
                                                 <TableCell className="min-w-[200px] max-w-xs truncate">
-                                                    {r.melhoriaBurger || '-'}
+                                                    {r.melhoriaBurger || 'N/A'}
                                                 </TableCell>
                                                 <TableCell className="min-w-[200px] max-w-xs truncate">
-                                                    {r.sugestao || '-'}
+                                                    {r.sugestao || 'N/A'}
                                                 </TableCell>
                                                 <TableCell>
                                                     {r.premioGanho ? <Badge>{r.premioGanho}</Badge> : <span className="text-muted-foreground text-xs">N/A</span>}
