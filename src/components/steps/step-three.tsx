@@ -61,7 +61,7 @@ const SurveySchema = z.object({
   ) {
     ctx.addIssue({
       path: ['melhoriaBurger'],
-      message: 'Conte pra gente o que podemos melhorar 🙂',
+      message: 'Sua opinião é muito importante para nós. Conte o que podemos melhorar.',
       code: z.ZodIssueCode.custom,
     });
   }
@@ -331,7 +331,7 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
                     name="melhoriaBurger"
                     render={({ field }) => (
                       <FormItem className="animate-in fade-in-50 duration-300 pt-4">
-                        <FormLabel>Por favor, como podemos fazer isso?</FormLabel>
+                        <FormLabel>Nos conte aqui como podemos melhorar, sua opinião é muito importante para nós</FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder="Seu feedback nos ajuda a crescer..."
