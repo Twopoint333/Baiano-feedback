@@ -185,8 +185,8 @@ export default function Dashboard() {
                 r.atendimento,
                 r.agilidade,
                 r.burger,
-                r.burger === 'Poderia melhorar 🤔' ? (r.sugestao || '-') : '-',
-                r.burger !== 'Poderia melhorar 🤔' ? (r.sugestao || '-') : '-',
+                r.melhoriaBurger || '-',
+                r.sugestao || '-',
                 r.premioGanho || 'N/A'
             ]),
             styles: { fontSize: 8 },
@@ -361,10 +361,10 @@ export default function Dashboard() {
                                                 <TableCell className="whitespace-nowrap">{r.agilidade}</TableCell>
                                                 <TableCell className="whitespace-nowrap">{r.burger}</TableCell>
                                                 <TableCell className="min-w-[200px] max-w-xs truncate">
-                                                    {r.burger === 'Poderia melhorar 🤔' ? (r.sugestao || '-') : '-'}
+                                                    {r.melhoriaBurger || '-'}
                                                 </TableCell>
                                                 <TableCell className="min-w-[200px] max-w-xs truncate">
-                                                    {r.burger !== 'Poderia melhorar 🤔' ? (r.sugestao || '-') : '-'}
+                                                    {r.sugestao || '-'}
                                                 </TableCell>
                                                 <TableCell>
                                                     {r.premioGanho ? <Badge>{r.premioGanho}</Badge> : <span className="text-muted-foreground text-xs">N/A</span>}
