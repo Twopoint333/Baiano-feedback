@@ -16,7 +16,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ResponsiveContainer, PieChart, Pie, Cell, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart } from 'recharts';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 // --- Senha de Acesso ---
 const DASHBOARD_PASSWORD = 'Baiano2k25'; // Senha para acessar o dashboard
@@ -34,19 +33,29 @@ const CustomPieChart = ({ data, title, icon: Icon }: { data: any[], title: strin
         </CardHeader>
         <CardContent>
             {data.length > 0 ? (
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
-                        <Pie data={data} cx="50%" cy="50%" labelLine={false} outerRadius={80} fill="#8884d8" dataKey="value" nameKey="name" label={({ percent }) => `${(percent * 100).toFixed(0)}%`}>
+                        <Pie 
+                            data={data} 
+                            cx="50%" 
+                            cy="50%" 
+                            labelLine={false} 
+                            outerRadius={80} 
+                            fill="#8884d8" 
+                            dataKey="value" 
+                            nameKey="name" 
+                            label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                        >
                             {data.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
                         <Tooltip formatter={(value, name) => [`${value} (${(value / data.reduce((acc, curr) => acc + curr.value, 0) * 100).toFixed(1)}%)`, name]}/>
-                        <Legend />
+                        <Legend wrapperStyle={{fontSize: '12px'}} />
                     </PieChart>
                 </ResponsiveContainer>
             ) : (
-                <div className="flex h-[200px] items-center justify-center text-muted-foreground">Sem dados</div>
+                <div className="flex h-[250px] items-center justify-center text-muted-foreground">Sem dados</div>
             )}
         </CardContent>
     </Card>
@@ -228,7 +237,7 @@ export default function Dashboard() {
                         <h1 className="text-3xl font-bold tracking-tight">Dashboard de Feedback</h1>
                         <p className="text-muted-foreground">Análise das respostas da pesquisa de satisfação.</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <Button onClick={handleExportCSV} disabled={!surveyResponses || surveyResponses.length === 0} variant="outline">
                             <Download className="mr-2 h-4 w-4" />
                             Exportar Contatos (CSV)
@@ -263,15 +272,14 @@ export default function Dashboard() {
                 </div>
 
                 {/* Gráficos */}
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                    <div className="grid grid-cols-1 gap-4">
-                        <CustomPieChart data={metrics.comoNosConheceuData} title="Como nos conheceu?" icon={Share2} />
-                        <CustomPieChart data={metrics.atendimentoData} title="Como foi o Atendimento?" icon={ThumbsUp} />
-                    </div>
-                     <div className="grid grid-cols-1 gap-4">
-                        <CustomPieChart data={metrics.agilidadeData} title="Agilidade no Preparo" icon={Clock} />
-                        <CustomPieChart data={metrics.burgerData} title="Como estava o Burger?" icon={Coffee} />
-                    </div>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <CustomPieChart data={metrics.comoNosConheceuData} title="Como nos conheceu?" icon={Share2} />
+                    <CustomPieChart data={metrics.atendimentoData} title="Como foi o Atendimento?" icon={ThumbsUp} />
+                    <CustomPieChart data={metrics.agilidadeData} title="Agilidade no Preparo" icon={Clock} />
+                    <CustomPieChart data={metrics.burgerData} title="Como estava o Burger?" icon={Coffee} />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -281,20 +289,17 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                              <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={metrics.blogueiraData} layout="vertical">
+                                <BarChart data={metrics.blogueiraData} layout="vertical" margin={{ left: 20, right: 30 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis type="number" allowDecimals={false} />
-                                    <YAxis dataKey="name" type="category" width={80} />
+                                    <YAxis dataKey="name" type="category" width={80} tick={{fontSize: 12}}/>
                                     <Tooltip />
-                                    <Legend />
                                     <Bar dataKey="value" name="Menções" fill="#F3722C" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </CardContent>
                     </Card>
-                </div>
-                
-                 <Card>
+                    <Card>
                         <CardHeader>
                             <CardTitle className="text-sm font-medium flex items-center gap-2">
                                 <BarChart2 className="h-4 w-4 text-muted-foreground" />
@@ -317,7 +322,8 @@ export default function Dashboard() {
                             </ResponsiveContainer>
                         </CardContent>
                     </Card>
-
+                </div>
+                
                 {/* Tabela de Respostas */}
                 <Card>
                     <CardHeader>
