@@ -158,10 +158,10 @@ export default function StepThree({ nextStep, formData, updateFormData }: StepTh
       const surveyDocRef = doc(firestore, 'survey_responses', surveyDocId);
       
       const dataToSave = {
-        uid: user.uid, // Add user's UID
+        uid: user.uid,
         nome: fullData.nome,
         telefone: fullData.telefone,
-        conheceInstagram: fullData.comoNosConheceu === 'Instagram' ? 'Yes' : 'No', // Simplified for schema
+        conheceInstagram: fullData.comoNosConheceu === 'Instagram' ? 'Yes' : 'No',
         avaliacaoGeral: fullData.avaliacaoGeral,
         atendimento: fullData.atendimento,
         agilidade: fullData.agilidade,
