@@ -4,12 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 
 const PRIZES = [
-  'COCA KS',
-  'BATATA 100G',
-  'BATATA 200G',
-  'ONIONS 100G',
-  'FRANGO 140G',
+  { name: 'COCA KS', weight: 45 },
+  { name: 'BATATA 100G', weight: 20 },
+  { name: 'BATATA 200G', weight: 10 },
+  { name: 'ONIONS 100G', weight: 12.5 },
+  { name: 'FRANGO 140G', weight: 12.5 },
 ];
+
 
 const BRAND_COLORS = [
   '#F94144', // Vermelho
@@ -148,6 +149,11 @@ export function Roulette({ onPrizeWon, claimedPrize }: RouletteProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const winAudioRef = useRef<HTMLAudioElement | null>(null);
   const spinDuration = 6000;
+  
+  const items = PRIZES.map((prize, index) => ({
+    text: prize.name,
+    color: BRAND_COLORS[index % BRAND_COLORS.length],
+  }));
 
   useEffect(() => {
     // Inicializa o áudio no lado do cliente
@@ -158,10 +164,18 @@ export function Roulette({ onPrizeWon, claimedPrize }: RouletteProps) {
     winAudioRef.current = new Audio('/win-sound.mp3');
   }, []);
 
-  const items = PRIZES.map((prize, index) => ({
-    text: prize,
-    color: BRAND_COLORS[index % BRAND_COLORS.length],
-  }));
+  const getWeightedPrize = (): { name: string, weight: number } => {
+    const totalWeight = PRIZES.reduce((acc, prize) => acc + prize.weight, 0);
+    let randomNum = Math.random() * totalWeight;
+    for (const prize of PRIZES) {
+      if (randomNum < prize.weight) {
+        return prize;
+      }
+      randomNum -= prize.weight;
+    }
+    // Fallback (should not happen with correct weights)
+    return PRIZES[0];
+  };
 
   const spin = () => {
     if (isSpinning || claimedPrize) return;
@@ -174,12 +188,23 @@ export function Roulette({ onPrizeWon, claimedPrize }: RouletteProps) {
     setIsSpinning(true);
     setSpinResult(null);
 
-    const fullSpins = Math.floor(Math.random() * 4) + 8;
-    const randomFinalAngle = Math.random() * 360;
-    const finalRotation = fullSpins * 360 + randomFinalAngle;
+    const winningPrize = getWeightedPrize();
+    const winningPrizeIndex = PRIZES.findIndex(p => p.name === winningPrize.name);
 
-    const newTotalRotation = currentRotationRef.current + finalRotation;
+    const degPerItem = 360 / items.length;
+    // Calculate the angle for the middle of the winning sector
+    const winningAngle = degPerItem * winningPrizeIndex + degPerItem / 2;
+    // Add a small random offset inside the winning sector to make it look more natural
+    const randomOffset = (Math.random() - 0.5) * (degPerItem * 0.8);
+    const targetAngle = winningAngle + randomOffset;
+    
+    const fullSpins = Math.floor(Math.random() * 4) + 8;
+    const finalRotation = fullSpins * 360 + (360 - targetAngle);
+
+    const newTotalRotation = finalRotation;
     setRotation(newTotalRotation);
+    // We don't use currentRotationRef anymore for the final angle calculation
+    // but keep it to track total rotation if needed for other effects.
     currentRotationRef.current = newTotalRotation;
   };
 
@@ -197,7 +222,7 @@ export function Roulette({ onPrizeWon, claimedPrize }: RouletteProps) {
         winAudioRef.current.play();
       }
 
-      const finalAngle = currentRotationRef.current;
+      const finalAngle = rotation;
       const normalizedAngle = (360 - (finalAngle % 360)) % 360;
       const degPerItem = 360 / items.length;
       const winningSectorIndex = Math.floor(normalizedAngle / degPerItem);
@@ -218,7 +243,7 @@ export function Roulette({ onPrizeWon, claimedPrize }: RouletteProps) {
         rouletteElement.removeEventListener('transitionend', handleTransitionEnd);
       }
     };
-  }, [isSpinning, items, onPrizeWon]);
+  }, [isSpinning, items, onPrizeWon, rotation]);
 
   const hasSpun = spinResult !== null;
 
