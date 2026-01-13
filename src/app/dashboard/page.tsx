@@ -251,7 +251,7 @@ export default function Dashboard() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                         <ScrollArea className="h-[400px] w-full">
+                         <ScrollArea className="h-[400px] w-full rounded-md border">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
