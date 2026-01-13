@@ -272,7 +272,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Gráficos */}
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
                     <CustomPieChart data={metrics.comoNosConheceuData} title="Como nos conheceu?" icon={Share2} />
                     <CustomPieChart data={metrics.atendimentoData} title="Como foi o Atendimento?" icon={ThumbsUp} />
                     <CustomPieChart data={metrics.agilidadeData} title="Agilidade no Preparo" icon={Clock} />
